@@ -47,14 +47,14 @@ public class JadePlugin implements IWailaPlugin {
 
             TankConfig config = valve.getTankConfig();
 
-            IElementHelper helper = iTooltip.getTooltip().getElementHelper();
+            IElementHelper helper = IElementHelper.get();
 
             float progress = config.getFilledPercentage();
 
             boolean isFluidEmpty = config.getFluidStack().isEmpty();
 
             FluidView view = new FluidView(helper.fluid(JadeFluidObject.of(config.getFluidStack().getFluid())));
-            view.fluidName = isFluidEmpty ? Component.literal("Empty") : config.getFluidStack().getDisplayName();
+            view.fluidName = isFluidEmpty ? Component.literal("Empty") : config.getFluidStack().getHoverName();
             view.current = FluidTextHelper.getUnicodeMillibuckets(isFluidEmpty ? config.getFluidCapacity() : config.getFluidAmount(), true);
 
             ProgressStyle progressStyle = helper.progressStyle().overlay(view.overlay);

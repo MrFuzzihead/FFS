@@ -33,8 +33,10 @@ import java.util.Objects;
 import java.util.Optional;
 
 public class GuiValve extends Screen {
-    private static final ResourceLocation tex_valve = new ResourceLocation(FancyFluidStorage.MOD_ID + ":textures/gui/gui_tank_valve.png");
-    private static final ResourceLocation tex_no_valve = new ResourceLocation(FancyFluidStorage.MOD_ID + ":textures/gui/gui_tank_no_valve.png");
+//    private static final ResourceLocation tex_valve = ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID + ":textures/gui/gui_tank_valve.png");
+    private static final ResourceLocation tex_valve = ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID,"textures/gui/gui_tank_valve.png");
+//    private static final ResourceLocation tex_no_valve = ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID + ":textures/gui/gui_tank_no_valve.png");
+    private static final ResourceLocation tex_no_valve = ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID,"textures/gui/gui_tank_no_valve.png");
     private final AbstractTankValve valve;
     private final AbstractTankValve mainValve;
     private final int xSize_Valve = 196;
@@ -143,7 +145,7 @@ public class GuiValve extends Screen {
 
         Component fluid = Component.translatable("gui.ffs.fluid_valve.empty");
         if (!this.valve.getTankConfig().getFluidStack().isEmpty()) {
-            fluid = this.valve.getTankConfig().getFluidStack().getDisplayName();
+            fluid = this.valve.getTankConfig().getFluidStack().getHoverName();
         }
 
         guiGraphics.drawCenteredString(this.font, fluid, this.left + (this.xSize_Valve / 2), this.top + 6, 16777215);
@@ -178,7 +180,7 @@ public class GuiValve extends Screen {
 
         Component fluid = Component.translatable("gui.ffs.fluid_valve.empty");
         if (!this.valve.getTankConfig().isEmpty()) {
-            fluid = this.valve.getTankConfig().getFluidStack().getDisplayName();
+            fluid = this.valve.getTankConfig().getFluidStack().getHoverName();
         }
 
         guiGraphics.drawCenteredString(this.font, fluid, this.left + (this.xSize_NoValve / 2), this.top + 6, 16777215);
@@ -231,7 +233,7 @@ public class GuiValve extends Screen {
                             .append(Component.translatable("gui.ffs.fluid_valve.fluid_locked").withStyle(ChatFormatting.RED))
             );
             texts.add(
-                    (Component.translatable("description.ffs.fluid_valve.fluid", this.valve.getTankConfig().getLockedFluid().getDisplayName()))
+                    (Component.translatable("description.ffs.fluid_valve.fluid", this.valve.getTankConfig().getLockedFluid().getHoverName()))
                             .withStyle(ChatFormatting.GRAY)
             );
         } else {
@@ -308,8 +310,7 @@ public class GuiValve extends Screen {
 
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
 
-        BufferBuilder builder = Tesselator.getInstance().getBuilder();
-        builder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+        BufferBuilder builder = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
 
         float minU = icon.getU0();
         float maxU = icon.getU1();
@@ -326,13 +327,13 @@ public class GuiValve extends Screen {
         buildSquare(matrix, builder, x, x + width, y, y + height, zLevel, minU, actualWidth, minV, actualHeight);
 
         RenderSystem.enableDepthTest();
-        BufferUploader.drawWithShader(builder.end());
+        BufferUploader.drawWithShader(Objects.requireNonNull(builder.build()));
     }
 
     private static void buildSquare(Matrix4f matrix, BufferBuilder builder, float x1, float x2, float y1, float y2, float z, float u1, float u2, float v1, float v2) {
-        builder.vertex(matrix, x1, y2, z).uv(u1, v2).endVertex();
-        builder.vertex(matrix, x2, y2, z).uv(u2, v2).endVertex();
-        builder.vertex(matrix, x2, y1, z).uv(u2, v1).endVertex();
-        builder.vertex(matrix, x1, y1, z).uv(u1, v1).endVertex();
+        builder.addVertex(matrix, x1, y2, z).setUv(u1, v2);
+        builder.addVertex(matrix, x2, y2, z).setUv(u2, v2);
+        builder.addVertex(matrix, x2, y1, z).setUv(u2, v1);
+        builder.addVertex(matrix, x1, y1, z).setUv(u1, v1);
     }
 }

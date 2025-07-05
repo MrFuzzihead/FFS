@@ -52,7 +52,7 @@ public record TankComputerPeripheral(BlockEntityTankComputer computer) implement
 
         TankConfig config = computer.getMainValve().getTankConfig();
 
-        table.put("fluid", config.isEmpty() ? null : config.getFluidStack().getDisplayName().getString());
+        table.put("fluid", config.isEmpty() ? null : config.getFluidStack().getHoverName().getString());
         if (!config.isEmpty()) {
             int amount = config.getFluidAmount();
             int capacity = config.getFluidCapacity();
@@ -102,6 +102,6 @@ public record TankComputerPeripheral(BlockEntityTankComputer computer) implement
         TankConfig config = computer.getMainValve().getTankConfig();
         if (config.isEmpty() || config.getLockedFluid().isEmpty()) return null;
 
-        return config.getLockedFluid().getDisplayName().getString();
+        return config.getLockedFluid().getHoverName().getString();
     }
 }

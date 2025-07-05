@@ -9,9 +9,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.SpawnPlacements;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.Level;
@@ -78,30 +80,58 @@ public abstract class AbstractBlock extends Block implements EntityBlock {
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
-        if (worldIn.isClientSide()) return InteractionResult.SUCCESS;
+    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult) {
+//        return super.useItemOn(stack, state, level, pos, player, hand, hitResult);
+        if (level.isClientSide()) return ItemInteractionResult.SUCCESS;
 
-        if (player.isShiftKeyDown()) return InteractionResult.PASS;
+        if (player.isShiftKeyDown()) return ItemInteractionResult.FAIL;
 
-        AbstractTankEntity tankEntity = (AbstractTankEntity) worldIn.getBlockEntity(pos);
+        AbstractTankEntity tankEntity = (AbstractTankEntity) level.getBlockEntity(pos);
         if (tankEntity == null) {
-            return InteractionResult.PASS;
+            return ItemInteractionResult.FAIL;
         }
 
         if (tankEntity.isValid()) {
             if (GenericUtil.isFluidContainer(player.getMainHandItem())) {
-                if (GenericUtil.fluidContainerHandler(worldIn, tankEntity.getMainValve(), player)) {
+                if (GenericUtil.fluidContainerHandler(level, tankEntity.getMainValve(), player)) {
                     tankEntity.getMainValve().markForUpdateNow();
-                    return InteractionResult.CONSUME;
+                    return ItemInteractionResult.CONSUME;
                 }
             }
 
             NetworkHandler.sendPacketToPlayer(new FFSPacket.Client.OpenGUI(tankEntity, false), (ServerPlayer) player);
         } else if (tankEntity instanceof AbstractTankValve valve) {
-            valve.buildTank(player, hit.getDirection().getOpposite());
+            valve.buildTank(player, hitResult.getDirection().getOpposite());
         }
-        return InteractionResult.CONSUME;
+        return ItemInteractionResult.CONSUME;
     }
+
+    // TODO: Do we stil need to handle non-items?
+    //    @Override
+//    public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
+//        if (worldIn.isClientSide()) return InteractionResult.SUCCESS;
+//
+//        if (player.isShiftKeyDown()) return InteractionResult.PASS;
+//
+//        AbstractTankEntity tankEntity = (AbstractTankEntity) worldIn.getBlockEntity(pos);
+//        if (tankEntity == null) {
+//            return InteractionResult.PASS;
+//        }
+//
+//        if (tankEntity.isValid()) {
+//            if (GenericUtil.isFluidContainer(player.getMainHandItem())) {
+//                if (GenericUtil.fluidContainerHandler(worldIn, tankEntity.getMainValve(), player)) {
+//                    tankEntity.getMainValve().markForUpdateNow();
+//                    return InteractionResult.CONSUME;
+//                }
+//            }
+//
+//            NetworkHandler.sendPacketToPlayer(new FFSPacket.Client.OpenGUI(tankEntity, false), (ServerPlayer) player);
+//        } else if (tankEntity instanceof AbstractTankValve valve) {
+//            valve.buildTank(player, hit.getDirection().getOpposite());
+//        }
+//        return InteractionResult.CONSUME;
+//    }
 
     @Override
     public boolean hasAnalogOutputSignal(BlockState state) {
@@ -117,9 +147,9 @@ public abstract class AbstractBlock extends Block implements EntityBlock {
         return 0;
     }
 
-    @Override
-    public boolean isValidSpawn(BlockState state, BlockGetter level, BlockPos pos, SpawnPlacements.Type type, EntityType<?> entityType) {
-        return false;
-    }
-
+    // TODO: Does this still exist?
+//    @Override
+//    public boolean isValidSpawn(BlockState state, BlockGetter level, BlockPos pos, SpawnPlacements.Type type, EntityType<?> entityType) {
+//        return false;
+//    }
 }

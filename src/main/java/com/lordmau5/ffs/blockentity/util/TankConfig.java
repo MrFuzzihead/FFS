@@ -1,7 +1,9 @@
 package com.lordmau5.ffs.blockentity.util;
 
 import com.lordmau5.ffs.blockentity.abstracts.AbstractTankValve;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
 import net.neoforged.neoforge.fluids.FluidStack;
@@ -76,7 +78,7 @@ public class TankConfig {
         return this.fluidTank.isEmpty();
     }
 
-    public void readFromNBT(CompoundTag mainTag) {
+    public void readFromNBT(CompoundTag mainTag, HolderLookup.Provider registries) {
         resetVariables();
 
         if (!mainTag.contains("TankConfig")) {
@@ -85,29 +87,27 @@ public class TankConfig {
 
         CompoundTag tag = mainTag.getCompound("TankConfig");
 
-        getFluidTank().readFromNBT(tag);
+        getFluidTank().readFromNBT(registries, tag);
 
         if (tag.contains("LockedFluid")) {
             CompoundTag base = tag.getCompound("LockedFluid");
-            lockFluid(FluidStack.loadFluidStackFromNBT(base));
+            lockFluid(FluidStack.parseOptional(registries, base));
         }
         setFluidCapacity(tag.getInt("Capacity"));
 
     }
 
-    public void writeToNBT(CompoundTag mainTag) {
+    public void writeToNBT(CompoundTag mainTag, HolderLookup.Provider registries) {
         CompoundTag tag = new CompoundTag();
 
         if (isFluidLocked()) {
-            CompoundTag lockedFluidTag = new CompoundTag();
-
-            getLockedFluid().writeToNBT(lockedFluidTag);
+            Tag lockedFluidTag = getLockedFluid().save(registries);
 
             tag.put("LockedFluid", lockedFluidTag);
         }
         tag.putInt("Capacity", getFluidCapacity());
 
-        getFluidTank().writeToNBT(tag);
+        getFluidTank().writeToNBT(registries, tag);
 
         mainTag.put("TankConfig", tag);
     }

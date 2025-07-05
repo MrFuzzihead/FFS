@@ -12,6 +12,7 @@ import com.lordmau5.ffs.util.GenericUtil;
 import com.lordmau5.ffs.util.TankManager;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
@@ -26,8 +27,6 @@ import net.neoforged.neoforge.fluids.FluidStack;
 
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static net.neoforged.neoforge.client.extensions.IBlockEntityRendererExtension.INFINITE_EXTENT_AABB;
 
 public abstract class AbstractTankValve extends AbstractTankEntity implements IFacingEntity, INameableEntity, IBlockEntityRendererExtension<AbstractTankValve>
 {
@@ -477,7 +476,7 @@ public abstract class AbstractTankValve extends AbstractTankEntity implements IF
                                 FluidStack myFS = getTankConfig().getFluidStack();
                                 FluidStack otherFS = valve.getTankConfig().getFluidStack();
 
-                                if (!myFS.isFluidEqual(otherFS)) {
+                                if (!FluidStack.isSameFluidSameComponents(myFS, otherFS)) {
                                     GenericUtil.sendMessageToClient(buildPlayer, "chat.ffs.valve_different_fluids", false);
                                     return false;
                                 }
@@ -492,7 +491,7 @@ public abstract class AbstractTankValve extends AbstractTankEntity implements IF
 
         getTankConfig().setFluidStack(tempNewFluidStack);
         // Make sure we don't overfill a tank. If the new tank is smaller than the old one, excess liquid disappear.
-        if (!getTankConfig().getFluidStack().isEmpty() && getTankConfig().getFluidStack().getRawFluid() != Fluids.EMPTY) {
+        if (!getTankConfig().getFluidStack().isEmpty() && getTankConfig().getFluidStack().getFluid() != Fluids.EMPTY) {
             getTankConfig().getFluidStack().setAmount(Math.min(getTankConfig().getFluidStack().getAmount(), getTankConfig().getFluidCapacity()));
         }
 
@@ -680,13 +679,13 @@ public abstract class AbstractTankValve extends AbstractTankEntity implements IF
     }
 
     @Override
-    public void load(CompoundTag nbt) {
-        super.load(nbt);
+    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
 
-        isMain = nbt.getBoolean("IsMain");
+        isMain = tag.getBoolean("IsMain");
         if (isMain()) {
-            isValid = nbt.getBoolean("IsValid");
-            getTankConfig().readFromNBT(nbt);
+            isValid = tag.getBoolean("IsValid");
+            getTankConfig().readFromNBT(tag, registries);
 
             if (getLevel() != null && getLevel().isClientSide()) {
                 if (isValid()) {
@@ -697,18 +696,18 @@ public abstract class AbstractTankValve extends AbstractTankEntity implements IF
             }
         }
 
-        readTileNameFromNBT(nbt);
-        readTileFacingFromNBT(nbt);
+        readTileNameFromNBT(tag);
+        readTileFacingFromNBT(tag);
     }
 
     @Override
-    public void saveAdditional(CompoundTag nbt) {
-        super.saveAdditional(nbt);
+    public void saveAdditional(CompoundTag nbt, HolderLookup.Provider registries) {
+        super.saveAdditional(nbt, registries);
 
         nbt.putBoolean("IsMain", isMain());
         if (isMain()) {
             nbt.putBoolean("IsValid", isValid());
-            getTankConfig().writeToNBT(nbt);
+            getTankConfig().writeToNBT(nbt, registries);
         }
 
         saveTileNameToNBT(nbt);
@@ -718,9 +717,8 @@ public abstract class AbstractTankValve extends AbstractTankEntity implements IF
     @Override
     public AABB getRenderBoundingBox(AbstractTankValve blockEntity)
     {
-        return INFINITE_EXTENT_AABB;
+        return AABB.INFINITE;
     }
-
 
     public int getComparatorOutput() {
         if (!isValid()) {

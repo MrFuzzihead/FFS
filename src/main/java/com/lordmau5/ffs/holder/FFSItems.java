@@ -5,7 +5,7 @@ import com.lordmau5.ffs.item.ItemTit;
 import com.lordmau5.ffs.item.ItemTitEgg;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.Item;
-import net.neoforged.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -22,7 +22,7 @@ public class FFSItems {
         return ITEMS.register(name, item);
     }
 
-    public static void register() {
-        ITEMS.register(FMLJavaModLoadingContext.get().getModEventBus());
+    public static void register(IEventBus bus) {
+        ITEMS.register(bus);
     }
 }

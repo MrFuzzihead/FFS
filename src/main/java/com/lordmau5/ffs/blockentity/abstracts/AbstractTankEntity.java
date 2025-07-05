@@ -2,6 +2,7 @@ package com.lordmau5.ffs.blockentity.abstracts;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.Packet;
@@ -63,57 +64,48 @@ public abstract class AbstractTankEntity extends BlockEntity {
     }
 
     @Override
-    public void load(CompoundTag nbt) {
-        super.load(nbt);
+    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
 
-        setValvePos(nbt.contains("valvePos") ? BlockPos.of(nbt.getLong("valvePos")) : null);
+        setValvePos(tag.contains("valvePos") ? BlockPos.of(tag.getLong("valvePos")) : null);
     }
 
     @Override
-    public void saveAdditional(CompoundTag nbt) {
-        super.saveAdditional(nbt);
+    public void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
 
         if (this.mainValvePos != null) {
-            nbt.putLong("valvePos", this.mainValvePos.asLong());
+            tag.putLong("valvePos", this.mainValvePos.asLong());
         }
     }
 
     @Override
-    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt) {
-        super.onDataPacket(net, pkt);
+    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt, HolderLookup.Provider lookupProvider) {
+        super.onDataPacket(net, pkt, lookupProvider);
 
         boolean oldIsValid = isValid();
 
-        if (pkt.getTag() != null) {
-            load(pkt.getTag());
-        }
+        loadAdditional(pkt.getTag(), lookupProvider);
 
         if (getLevel() != null && getLevel().isClientSide() && oldIsValid != isValid()) {
             markForUpdateNow();
         }
     }
 
-    @Nullable
-    @Override
-    public Packet<ClientGamePacketListener> getUpdatePacket() {
-        ClientboundBlockEntityDataPacket packet = ClientboundBlockEntityDataPacket.create(this);
-        if (packet.getTag() != null) {
-            saveAdditional(packet.getTag());
-        }
-        return packet;
-    }
+//    @Nullable
+//    @Override
+//    public Packet<ClientGamePacketListener> getUpdatePacket() {
+//        ClientboundBlockEntityDataPacket packet = ClientboundBlockEntityDataPacket.create(this);
+//        saveAdditional(packet.getTag());
+//        return packet;
+//    }
 
     @NotNull
     @Override
-    public CompoundTag getUpdateTag() {
-        CompoundTag tag = super.getUpdateTag();
-        saveAdditional(tag);
+    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
+        CompoundTag tag = super.getUpdateTag(registries);
+        saveAdditional(tag, registries);
         return tag;
-    }
-
-    @Override
-    public void handleUpdateTag(CompoundTag tag) {
-        load(tag);
     }
 
     public void doUpdate() {

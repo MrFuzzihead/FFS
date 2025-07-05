@@ -5,7 +5,7 @@ import com.lordmau5.ffs.blockentity.tanktiles.BlockEntityTankComputer;
 import com.lordmau5.ffs.blockentity.valves.BlockEntityFluidValve;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.neoforged.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -23,7 +23,7 @@ public class FFSBlockEntities {
             () -> BlockEntityType.Builder.of(BlockEntityTankComputer::new, FFSBlocks.tankComputer.get()).build(null));
 
 
-    public static void register() {
-        BLOCK_ENTITIES.register(FMLJavaModLoadingContext.get().getModEventBus());
+    public static void register(IEventBus bus) {
+        BLOCK_ENTITIES.register(bus);
     }
 }

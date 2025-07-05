@@ -21,7 +21,7 @@ import net.neoforged.neoforge.fluids.FluidStack;
 public class TankInfoProvider implements IProbeInfoProvider {
     @Override
     public ResourceLocation getID() {
-        return new ResourceLocation("tank_info_provider", FancyFluidStorage.MOD_ID);
+        return ResourceLocation.fromNamespaceAndPath("tank_info_provider", FancyFluidStorage.MOD_ID);
     }
 
     @Override
@@ -44,7 +44,7 @@ public class TankInfoProvider implements IProbeInfoProvider {
     private void addFluidInfo(IProbeInfo probeInfo, ProbeConfig config, FluidStack fluidStack, int maxContents) {
         int contents = fluidStack.isEmpty() ? 0 : fluidStack.getAmount();
         if (!fluidStack.isEmpty()) {
-            probeInfo.text(Component.translatable("top.ffs.fluid", fluidStack.getDisplayName()));
+            probeInfo.text(Component.translatable("top.ffs.fluid", fluidStack.getHoverName()));
         }
 
         if (config.getTankMode() == 1) {

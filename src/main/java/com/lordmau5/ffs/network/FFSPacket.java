@@ -14,12 +14,11 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.neoforged.neoforge.network.handling.PlayPayloadContext;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.neoforged.neoforge.network.handling.IPayloadHandler;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.TreeMap;
-import java.util.function.Supplier;
 
 public abstract class FFSPacket {
     public static abstract class Client {
@@ -27,7 +26,7 @@ public abstract class FFSPacket {
             public BlockPos pos;
             public boolean isValve;
 
-            public static final ResourceLocation ID = new ResourceLocation(FancyFluidStorage.MOD_ID, "open_gui");
+            public static final Type<OpenGUI> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID, "open_gui"));
 
 
             public OpenGUI() {
@@ -60,15 +59,19 @@ public abstract class FFSPacket {
                 return isValve;
             }
 
-            public static void onReceived(OpenGUI msg, PlayPayloadContext ctx) {
-                ctx.workHandler().submitAsync(() -> FFSPacketClientHandler.handleOnOpenGUI(msg));
+            public static class Handler implements IPayloadHandler<OpenGUI> {
+                @Override
+                public void handle(OpenGUI payload, IPayloadContext context) {
+                    context.enqueueWork(() -> {
+                        FFSPacketClientHandler.handleOnOpenGUI(payload);
+                    });
+                }
             }
 
-
             @Override
-            public ResourceLocation id()
+            public Type<? extends CustomPacketPayload> type()
             {
-                return ID;
+                return TYPE;
             }
         }
 
@@ -76,7 +79,7 @@ public abstract class FFSPacket {
             private BlockPos valvePos;
             private TreeMap<Integer, HashSet<BlockPos>> airBlocks;
             private TreeMap<Integer, HashSet<BlockPos>> frameBlocks;
-            public static final ResourceLocation ID = new ResourceLocation(FancyFluidStorage.MOD_ID, "on_tank_build");
+            public static final Type<OnTankBuild> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID, "on_tank_build"));
 
             public OnTankBuild() {
             }
@@ -87,7 +90,6 @@ public abstract class FFSPacket {
                 this.frameBlocks = valve.getFrameBlocks();
             }
 
-            @Override
             public void write(FriendlyByteBuf buffer) {
                 buffer.writeLong(this.valvePos.asLong());
 
@@ -96,7 +98,7 @@ public abstract class FFSPacket {
                     buffer.writeInt(layer);
 
                     var layerAirBlocks = this.airBlocks.get(layer);
-                    buffer.writeCollection(layerAirBlocks, FriendlyByteBuf::writeBlockPos);
+                    buffer.writeCollection(layerAirBlocks, (buf, pos) -> buf.writeBlockPos(pos));
                 }
 
                 buffer.writeInt(this.frameBlocks.size());
@@ -104,7 +106,7 @@ public abstract class FFSPacket {
                     buffer.writeInt(layer);
 
                     var layerFrameBlocks = this.frameBlocks.get(layer);
-                    buffer.writeCollection(layerFrameBlocks, FriendlyByteBuf::writeBlockPos);
+                    buffer.writeCollection(layerFrameBlocks, (buf, pos) -> buf.writeBlockPos(pos));
                 }
             }
 
@@ -148,21 +150,25 @@ public abstract class FFSPacket {
                 return frameBlocks;
             }
 
-            public static void onReceived(OnTankBuild msg, PlayPayloadContext  ctx) {
-                ctx.workHandler().submitAsync(() -> FFSPacketClientHandler.handleOnTankBuild(msg));
+            public static class Handler implements IPayloadHandler<OnTankBuild> {
+                @Override
+                public void handle(OnTankBuild payload, IPayloadContext context) {
+                    context.enqueueWork(() -> {
+                        FFSPacketClientHandler.handleOnTankBuild(payload);
+                    });
+                }
             }
 
-
             @Override
-            public ResourceLocation id()
+            public Type<? extends CustomPacketPayload> type()
             {
-                return ID;
+                return TYPE;
             }
         }
 
         public static class OnTankBreak implements CustomPacketPayload {
             private BlockPos valvePos;
-            public static final ResourceLocation ID = new ResourceLocation(FancyFluidStorage.MOD_ID, "on_tank_break");
+            public static final Type<OnTankBreak> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID, "on_tank_break"));
 
             public OnTankBreak() {
             }
@@ -171,7 +177,7 @@ public abstract class FFSPacket {
                 this.valvePos = valve.getBlockPos();
             }
 
-            @Override
+
             public void write(FriendlyByteBuf buffer) {
                 buffer.writeBlockPos(this.valvePos);
             }
@@ -188,25 +194,29 @@ public abstract class FFSPacket {
                 return valvePos;
             }
 
-            public static void onReceived(OnTankBreak msg, PlayPayloadContext ctx) {
-                ctx.workHandler().submitAsync(() -> FFSPacketClientHandler.handleOnTankBreak(msg));
+            public static class Handler implements IPayloadHandler<OnTankBreak> {
+                @Override
+                public void handle(OnTankBreak payload, IPayloadContext context) {
+                    context.enqueueWork(() -> {
+                        FFSPacketClientHandler.handleOnTankBreak(payload);
+                    });
+                }
             }
 
-
             @Override
-            public ResourceLocation id()
+            public Type<? extends CustomPacketPayload> type()
             {
-                return ID;
+                return TYPE;
             }
         }
 
         public static class ClearTanks implements CustomPacketPayload {
-            public static final ResourceLocation ID = new ResourceLocation(FancyFluidStorage.MOD_ID, "clear_tanks");
+            public static final Type<ClearTanks> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID, "clear_tanks"));
 
             public ClearTanks() {
             }
 
-            @Override
+
             public void write(FriendlyByteBuf buffer) {
             }
 
@@ -214,15 +224,19 @@ public abstract class FFSPacket {
                 return new ClearTanks();
             }
 
-            public static void onReceived(ClearTanks msg, PlayPayloadContext ctx) {
-                ctx.workHandler().submitAsync(() -> TankManager.INSTANCE.clear());
+            public static class Handler implements IPayloadHandler<ClearTanks> {
+                @Override
+                public void handle(ClearTanks payload, IPayloadContext context) {
+                    context.enqueueWork(() -> {
+                        TankManager.INSTANCE.clear();
+                    });
+                }
             }
 
-
             @Override
-            public ResourceLocation id()
+            public Type<? extends CustomPacketPayload> type()
             {
-                return ID;
+                return TYPE;
             }
         }
     }
@@ -232,7 +246,7 @@ public abstract class FFSPacket {
             private BlockPos pos;
             private String name;
 
-            public static final ResourceLocation ID = new ResourceLocation(FancyFluidStorage.MOD_ID, "update_tile_name");
+            public static final Type<UpdateTileName> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID, "update_tile_name"));
 
             public UpdateTileName() {
             }
@@ -264,27 +278,26 @@ public abstract class FFSPacket {
                 return name;
             }
 
-            public static void onReceived(UpdateTileName msg, PlayPayloadContext ctx) {
+            public static class Handler implements IPayloadHandler<UpdateTileName> {
+                @Override
+                public void handle(UpdateTileName payload, IPayloadContext ctx) {
+                    ctx.enqueueWork(() -> {
+                        Player player = ctx.player();
+                        Level level = player.level();
 
-                ctx.workHandler().submitAsync(() -> {
-                    Optional<Player> playerEntity = ctx.player();
-                    Level world = playerEntity != null ? playerEntity.get().level() : null;
-
-                    if (world != null) {
-                        BlockEntity tile = world.getBlockEntity(msg.getPos());
-                        if (tile instanceof AbstractTankEntity && tile instanceof INameableEntity) {
-                            AbstractTankEntity abstractTankTile = (AbstractTankEntity) tile;
-                            ((INameableEntity) abstractTankTile).setTileName(msg.getName());
+                        BlockEntity tile = level.getBlockEntity(payload.getPos());
+                        if (tile instanceof AbstractTankEntity abstractTankTile && tile instanceof INameableEntity) {
+                            ((INameableEntity) abstractTankTile).setTileName(payload.getName());
                             abstractTankTile.markForUpdateNow();
                         }
-                    }
-                });
+                    });
+                }
             }
 
             @Override
-            public ResourceLocation id()
+            public Type<? extends CustomPacketPayload> type()
             {
-                return ID;
+                return TYPE;
             }
         }
 
@@ -293,7 +306,7 @@ public abstract class FFSPacket {
             private BlockPos pos;
             private boolean fluidLock;
 
-            public static final ResourceLocation ID = new ResourceLocation(FancyFluidStorage.MOD_ID, "update_fluid_lock");
+            public static final Type<UpdateFluidLock> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID, "update_fluid_lock"));
 
             public UpdateFluidLock() {
             }
@@ -303,7 +316,7 @@ public abstract class FFSPacket {
                 this.fluidLock = valve.getTankConfig().isFluidLocked();
             }
 
-            @Override
+
             public void write(FriendlyByteBuf buffer)
             {
                 buffer.writeBlockPos(this.pos);
@@ -328,31 +341,31 @@ public abstract class FFSPacket {
                 return fluidLock;
             }
 
-            public static void onReceived(UpdateFluidLock msg, PlayPayloadContext ctx) {
-                ctx.workHandler().submitAsync(() -> {
-                    Optional<Player> playerEntity = ctx.player();
-                    Level world = playerEntity != null ? playerEntity.get().level() : null;
+            public static class Handler implements IPayloadHandler<UpdateFluidLock> {
+                @Override
+                public void handle(UpdateFluidLock payload, IPayloadContext ctx) {
+                    ctx.enqueueWork(() -> {
+                        Player player = ctx.player();
+                        Level level = player.level();
 
-                    if (world != null) {
-                        BlockEntity tile = world.getBlockEntity(msg.getPos());
-                        if (tile instanceof AbstractTankValve) {
-                            AbstractTankValve valve = (AbstractTankValve) tile;
-                            valve.setFluidLock(msg.isFluidLock());
+                        BlockEntity tile = level.getBlockEntity(payload.getPos());
+                        if (tile instanceof AbstractTankValve valve) {
+                            valve.setFluidLock(payload.isFluidLock());
                         }
-                    }
-                });
+                    });
+                }
             }
 
             @Override
-            public ResourceLocation id()
+            public Type<? extends CustomPacketPayload> type()
             {
-                return ID;
+                return TYPE;
             }
         }
 
         public static class OnTankRequest implements CustomPacketPayload {
             private BlockPos pos;
-            public static final ResourceLocation ID = new ResourceLocation(FancyFluidStorage.MOD_ID, "on_tank_request");
+            public static final Type<OnTankRequest> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID, "on_tank_request"));
 
             public OnTankRequest() {
             }
@@ -377,24 +390,25 @@ public abstract class FFSPacket {
                 return pos;
             }
 
-            public static void onReceived(OnTankRequest msg, PlayPayloadContext ctx) {
-                ctx.workHandler().submitAsync(() -> {
-                    Optional<Player> playerEntity = ctx.player();
-                    Level world = playerEntity != null ? playerEntity.get().level() : null;
+            public static class Handler implements IPayloadHandler<OnTankRequest> {
+                @Override
+                public void handle(OnTankRequest payload, IPayloadContext ctx) {
+                    ctx.enqueueWork(() -> {
+                        Player player = ctx.player();
+                        Level level = player.level();
 
-                    if (world != null) {
-                        BlockEntity tile = world.getBlockEntity(msg.getPos());
+                        BlockEntity tile = level.getBlockEntity(payload.getPos());
                         if (tile instanceof AbstractTankValve) {
-                            NetworkHandler.sendPacketToPlayer(new FFSPacket.Client.OnTankBuild((AbstractTankValve) tile), (ServerPlayer) playerEntity.get());
+                            NetworkHandler.sendPacketToPlayer(new FFSPacket.Client.OnTankBuild((AbstractTankValve) tile), (ServerPlayer) player);
                         }
-                    }
-                });
+                    });
+                }
             }
 
             @Override
-            public ResourceLocation id()
+            public Type<? extends CustomPacketPayload> type()
             {
-                return ID;
+                return TYPE;
             }
         }
     }

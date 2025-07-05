@@ -21,13 +21,13 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.TickEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
-import net.neoforged.neoforge.event.entity.player.FillBucketEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
+import net.neoforged.neoforge.event.tick.LevelTickEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 
 import javax.annotation.Nonnull;
@@ -265,16 +265,12 @@ public class TankManager {
     }
 
     @SubscribeEvent
-    public void onServerTick(final TickEvent.LevelTickEvent event) {
-        if (event.level.isClientSide()) {
+    public void onServerTick(final LevelTickEvent event) {
+        Level level = event.getLevel();
+
+        if (level.isClientSide()) {
             return;
         }
-
-        if (event.phase != TickEvent.Phase.END) {
-            return;
-        }
-
-        Level level = event.level;
 
         if (get(level).getBlocksToCheck(level).isEmpty()) {
             return;
@@ -310,10 +306,6 @@ public class TankManager {
         BlockPos pos = event.getPos();
         Level world = event.getLevel();
         Player player = event.getEntity();
-
-        if (pos == null || world == null || player == null) {
-            return;
-        }
 
         if (!isPartOfTank(world, pos)) {
             return;
@@ -359,30 +351,31 @@ public class TankManager {
         }
     }
 
-    @SubscribeEvent
-    public void onFillBucket(FillBucketEvent event) {
-        if (event.getEntity().isShiftKeyDown()) {
-            return;
-        }
-
-        if (event.getTarget() == null) {
-            return;
-        }
-
-        if (event.getTarget().getType() != HitResult.Type.BLOCK) {
-            return;
-        }
-
-        BlockHitResult rayTraceResult = (BlockHitResult) event.getTarget();
-
-        BlockPos pos = rayTraceResult.getBlockPos();
-
-        if (!isPartOfTank(event.getLevel(), pos)) {
-            return;
-        }
-
-        event.setCanceled(true);
-    }
+    // TODO: FillBucketEvent
+//    @SubscribeEvent
+//    public void onFillBucket(FillBucketEvent event) {
+//        if (event.getEntity().isShiftKeyDown()) {
+//            return;
+//        }
+//
+//        if (event.getTarget() == null) {
+//            return;
+//        }
+//
+//        if (event.getTarget().getType() != HitResult.Type.BLOCK) {
+//            return;
+//        }
+//
+//        BlockHitResult rayTraceResult = (BlockHitResult) event.getTarget();
+//
+//        BlockPos pos = rayTraceResult.getBlockPos();
+//
+//        if (!isPartOfTank(event.getLevel(), pos)) {
+//            return;
+//        }
+//
+//        event.setCanceled(true);
+//    }
 
     @SubscribeEvent
     public void onDimensionChange(PlayerEvent.PlayerChangedDimensionEvent event) {

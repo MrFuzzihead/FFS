@@ -1,12 +1,13 @@
 package com.lordmau5.ffs.network;
 
 import com.lordmau5.ffs.FancyFluidStorage;
+import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.network.PacketDistributor;
-import net.neoforged.neoforge.network.event.RegisterPayloadHandlerEvent;
-import net.neoforged.neoforge.network.registration.IPayloadRegistrar;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 
 public class NetworkHandler {
@@ -18,82 +19,82 @@ public class NetworkHandler {
         bus.addListener(NetworkHandler::registerEvent);
     }
 
-    public static void registerEvent(RegisterPayloadHandlerEvent event)
+    public static void registerEvent(RegisterPayloadHandlersEvent event)
     {
-        IPayloadRegistrar registrar = event.registrar(FancyFluidStorage.MOD_ID).versioned(PROTOCOL_VERSION);
+        PayloadRegistrar registrar = event.registrar(FancyFluidStorage.MOD_ID).versioned(PROTOCOL_VERSION);
         registerChannels(registrar);
     }
 
-    public static void registerChannels(IPayloadRegistrar registrar) {
+    public static void registerChannels(PayloadRegistrar registrar) {
         registerBiDirectionalHandlers(registrar);
         registerServerHandlers(registrar);
         registerClientHandlers(registrar);
     }
 
-    private static void registerBiDirectionalHandlers(IPayloadRegistrar INSTANCE) {
+    private static void registerBiDirectionalHandlers(PayloadRegistrar INSTANCE) {
         // Update Fluid Lock
-        INSTANCE.play(
-                FFSPacket.Server.UpdateFluidLock.ID,
-                FFSPacket.Server.UpdateFluidLock::decode,
-                FFSPacket.Server.UpdateFluidLock::onReceived
+        INSTANCE.playBidirectional(
+                FFSPacket.Server.UpdateFluidLock.TYPE,
+                StreamCodec.of((buff, packet) -> packet.write(buff), FFSPacket.Server.UpdateFluidLock::decode),
+                new FFSPacket.Server.UpdateFluidLock.Handler()
         );
 
         // Update Tile Name
-        INSTANCE.play(
-                FFSPacket.Server.UpdateTileName.ID,
-                FFSPacket.Server.UpdateTileName::decode,
-                FFSPacket.Server.UpdateTileName::onReceived
+        INSTANCE.playBidirectional(
+                FFSPacket.Server.UpdateTileName.TYPE,
+                StreamCodec.of((buff, packet) -> packet.write(buff), FFSPacket.Server.UpdateTileName::decode),
+                new FFSPacket.Server.UpdateTileName.Handler()
         );
     }
 
-    private static void registerServerHandlers(IPayloadRegistrar INSTANCE) {
+    private static void registerServerHandlers(PayloadRegistrar INSTANCE) {
         // On Tank Request
-        INSTANCE.play(
-                FFSPacket.Server.OnTankRequest.ID,
-                FFSPacket.Server.OnTankRequest::decode,
-                FFSPacket.Server.OnTankRequest::onReceived
+        INSTANCE.playToServer(
+                FFSPacket.Server.OnTankRequest.TYPE,
+                StreamCodec.of((buff, packet) -> packet.write(buff), FFSPacket.Server.OnTankRequest::decode),
+                new FFSPacket.Server.OnTankRequest.Handler()
         );
     }
 
-    private static void registerClientHandlers(IPayloadRegistrar INSTANCE) {
+    private static void registerClientHandlers(PayloadRegistrar INSTANCE) {
         // Open GUI
-        INSTANCE.play(
-                FFSPacket.Client.OpenGUI.ID,
-                FFSPacket.Client.OpenGUI::decode,
-                FFSPacket.Client.OpenGUI::onReceived
+        INSTANCE.playToClient(
+                FFSPacket.Client.OpenGUI.TYPE,
+                StreamCodec.of((buff, packet) -> packet.write(buff), FFSPacket.Client.OpenGUI::decode),
+                new FFSPacket.Client.OpenGUI.Handler()
         );
 
         // On Tank Build
-        INSTANCE.play(
-                FFSPacket.Client.OnTankBuild.ID,
-                FFSPacket.Client.OnTankBuild::decode,
-                FFSPacket.Client.OnTankBuild::onReceived
+        INSTANCE.playToClient(
+                FFSPacket.Client.OnTankBuild.TYPE,
+                StreamCodec.of((buff, packet) -> packet.write(buff), FFSPacket.Client.OnTankBuild::decode),
+                new FFSPacket.Client.OnTankBuild.Handler()
         );
 
         // On Tank Break
-        INSTANCE.play(
-                FFSPacket.Client.OnTankBreak.ID,
-                FFSPacket.Client.OnTankBreak::decode,
-                FFSPacket.Client.OnTankBreak::onReceived
+        INSTANCE.playToClient(
+                FFSPacket.Client.OnTankBreak.TYPE,
+                StreamCodec.of((buff, packet) -> packet.write(buff), FFSPacket.Client.OnTankBreak::decode),
+                new FFSPacket.Client.OnTankBreak.Handler()
         );
 
         // Clear Tanks
-        INSTANCE.play(
-                FFSPacket.Client.ClearTanks.ID,
-                FFSPacket.Client.ClearTanks::decode,
-                FFSPacket.Client.ClearTanks::onReceived
+        INSTANCE.playToClient(
+                FFSPacket.Client.ClearTanks.TYPE,
+                StreamCodec.of((buff, packet) -> packet.write(buff), FFSPacket.Client.ClearTanks::decode),
+                new FFSPacket.Client.ClearTanks.Handler()
         );
     }
 
     public static void sendPacketToPlayer(CustomPacketPayload msg, ServerPlayer player) {
-        PacketDistributor.PLAYER.with(player).send(msg);
+        PacketDistributor.sendToPlayer(player, msg);
     }
 
     public static void sendPacketToAllPlayers(CustomPacketPayload msg) {
-        PacketDistributor.ALL.noArg().send(msg);
+        PacketDistributor.sendToAllPlayers(msg);
     }
 
     public static void sendPacketToServer(CustomPacketPayload msg) {
-        PacketDistributor.SERVER.noArg().send(msg);
+        PacketDistributor.sendToServer(msg);
     }
 }

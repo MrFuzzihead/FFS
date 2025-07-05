@@ -34,7 +34,7 @@ public class GenericUtil {
     }
 
     public static boolean isBlockGlass(BlockState blockState) {
-        return blockState.is(Tags.Blocks.GLASS) || blockState.is(Tags.Blocks.GLASS_PANES);
+        return blockState.is(Tags.Blocks.GLASS_BLOCKS) || blockState.is(Tags.Blocks.GLASS_PANES);
     }
 
     public static Direction getInsideForTankFrame(TreeMap<Integer, HashSet<BlockPos>> airBlocks, BlockPos frame) {
@@ -85,7 +85,7 @@ public class GenericUtil {
             }
 
             Optional<FluidStack> stack = FluidUtil.getFluidContained(current);
-            if (stack.isPresent() && !stack.get().isEmpty() && valve.getTankConfig().isFluidLocked() && !valve.getTankConfig().getLockedFluid().isFluidEqual(stack.get())) {
+            if (stack.isPresent() && !stack.get().isEmpty() && valve.getTankConfig().isFluidLocked() && !FluidStack.isSameFluidSameComponents(valve.getTankConfig().getLockedFluid(), stack.get())) {
                 return false;
             }
 
