@@ -265,7 +265,7 @@ public class TankManager {
     }
 
     @SubscribeEvent
-    public void onServerTick(final LevelTickEvent event) {
+    public void onServerTick(final LevelTickEvent.Post event) {
         Level level = event.getLevel();
 
         if (level.isClientSide()) {
