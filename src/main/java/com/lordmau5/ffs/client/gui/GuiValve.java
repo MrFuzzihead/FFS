@@ -14,7 +14,9 @@ import com.mojang.blaze3d.vertex.*;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.network.chat.Component;
@@ -97,6 +99,7 @@ public class GuiValve extends Screen {
             this.left = (this.width - this.xSize_NoValve) / 2;
             this.top = (this.height - this.ySize_NoValve) / 2;
             if (this.mainValve != null) {
+                // TODO: Button isn't being rendered?
                 this.addRenderableWidget(this.lockFluidButton = new GuiButtonLockFluid(this.left + 65, this.top + 26, this.mainValve.getTankConfig().isFluidLocked(), (button) -> {
                     this.lockFluidButton.toggleState();
 
@@ -168,9 +171,6 @@ public class GuiValve extends Screen {
             }
         }
 
-        // call to super to draw buttons and other such fancy things
-        super.render(guiGraphics, x, y, partialTicks);
-
         if (this.tile instanceof INameableEntity) {
             drawTileName(guiGraphics, this.left, this.top, partialTicks);
         }
@@ -207,9 +207,6 @@ public class GuiValve extends Screen {
             }
         }
 
-        // call to super to draw buttons and other such fancy things
-        super.render(guiGraphics, x, y, partialTicks);
-
         if (this.mouseX >= this.left + 66 && this.mouseX < this.left + 66 + 8 && this.mouseY >= this.top + 26 && this.mouseY < this.top + 26 + 8) {
             lockedFluidHoveringText(guiGraphics);
         } else {
@@ -221,6 +218,8 @@ public class GuiValve extends Screen {
 
     @Override
     public void render(@NotNull GuiGraphics guiGraphics, int x, int y, float partialTicks) {
+        super.render(guiGraphics, x, y, partialTicks);
+
         this.mouseX = x;
         this.mouseY = y;
 
