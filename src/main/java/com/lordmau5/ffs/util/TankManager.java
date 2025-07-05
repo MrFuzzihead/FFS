@@ -9,16 +9,16 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
@@ -27,7 +27,6 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
-import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 
 import javax.annotation.Nonnull;
@@ -251,10 +250,6 @@ public class TankManager {
 
     @SubscribeEvent
     public void entityJoinWorld(EntityJoinLevelEvent event) {
-        if (event.getLevel() == null || event.getEntity() == null) {
-            return;
-        }
-
         if (!(event.getEntity() instanceof PathfinderMob)) {
             return;
         }
@@ -313,6 +308,7 @@ public class TankManager {
 
         if (event.getHand() == InteractionHand.OFF_HAND) {
             event.setCanceled(true);
+            event.setCancellationResult(InteractionResult.FAIL);
             return;
         }
 
@@ -329,6 +325,7 @@ public class TankManager {
         }
 
         event.setCanceled(true);
+        event.setCancellationResult(InteractionResult.FAIL);
 
         player.swing(InteractionHand.MAIN_HAND, true);
 

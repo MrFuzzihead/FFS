@@ -26,6 +26,7 @@ import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,8 +38,8 @@ public class GuiValve extends Screen {
     private static final ResourceLocation tex_valve = ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID,"textures/gui/gui_tank_valve.png");
 //    private static final ResourceLocation tex_no_valve = ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID + ":textures/gui/gui_tank_no_valve.png");
     private static final ResourceLocation tex_no_valve = ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID,"textures/gui/gui_tank_no_valve.png");
-    private final AbstractTankValve valve;
-    private final AbstractTankValve mainValve;
+    private final @Nullable AbstractTankValve valve;
+    private final @Nullable AbstractTankValve mainValve;
     private final int xSize_Valve = 196;
     private final int ySize_Valve = 128;
     private final int xSize_NoValve = 96;
@@ -76,12 +77,14 @@ public class GuiValve extends Screen {
 //            this.tileName.setText(this.valve.getTileName());
 //            this.tileName.setMaxStringLength(32);
         }
-        this.addRenderableWidget(this.lockFluidButton = new GuiButtonLockFluid(this.left + 62, this.top + 26, this.mainValve.getTankConfig().isFluidLocked(), (button) -> {
-            this.lockFluidButton.toggleState();
+        if (this.mainValve != null) {
+            this.addRenderableWidget(this.lockFluidButton = new GuiButtonLockFluid(this.left + 62, this.top + 26, this.mainValve.getTankConfig().isFluidLocked(), (button) -> {
+                this.lockFluidButton.toggleState();
 
-            this.mainValve.setFluidLock(this.lockFluidButton.getState());
-            NetworkHandler.sendPacketToServer(new FFSPacket.Server.UpdateFluidLock(this.mainValve));
-        }));
+                this.mainValve.setFluidLock(this.lockFluidButton.getState());
+                NetworkHandler.sendPacketToServer(new FFSPacket.Server.UpdateFluidLock(this.mainValve));
+            }));
+        }
     }
 
     @Override
@@ -93,13 +96,15 @@ public class GuiValve extends Screen {
         } else {
             this.left = (this.width - this.xSize_NoValve) / 2;
             this.top = (this.height - this.ySize_NoValve) / 2;
-            this.addRenderableWidget(this.lockFluidButton = new GuiButtonLockFluid(this.left + 65, this.top + 26, this.mainValve.getTankConfig().isFluidLocked(), (button) -> {
-                this.lockFluidButton.toggleState();
+            if (this.mainValve != null) {
+                this.addRenderableWidget(this.lockFluidButton = new GuiButtonLockFluid(this.left + 65, this.top + 26, this.mainValve.getTankConfig().isFluidLocked(), (button) -> {
+                    this.lockFluidButton.toggleState();
 
-                this.mainValve.setFluidLock(this.lockFluidButton.getState());
-                this.lockFluidButton.setState(this.mainValve.getTankConfig().isFluidLocked());
-                NetworkHandler.sendPacketToServer(new FFSPacket.Server.UpdateFluidLock(this.mainValve));
-            }));
+                    this.mainValve.setFluidLock(this.lockFluidButton.getState());
+                    this.lockFluidButton.setState(this.mainValve.getTankConfig().isFluidLocked());
+                    NetworkHandler.sendPacketToServer(new FFSPacket.Server.UpdateFluidLock(this.mainValve));
+                }));
+            }
         }
     }
 
@@ -144,18 +149,22 @@ public class GuiValve extends Screen {
         guiGraphics.blit(tex_valve, this.left, this.top, 0, 0, this.xSize_Valve, this.ySize_Valve);
 
         Component fluid = Component.translatable("gui.ffs.fluid_valve.empty");
-        if (!this.valve.getTankConfig().getFluidStack().isEmpty()) {
-            fluid = this.valve.getTankConfig().getFluidStack().getHoverName();
+        if (this.valve != null) {
+            if (!this.valve.getTankConfig().getFluidStack().isEmpty()) {
+                fluid = this.valve.getTankConfig().getFluidStack().getHoverName();
+            }
         }
 
         guiGraphics.drawCenteredString(this.font, fluid, this.left + (this.xSize_Valve / 2), this.top + 6, 16777215);
 
         FluidStack stack = null;
-        if (this.valve.getTankConfig() != null && this.valve.getTankConfig().getFluidTank() != null) {
-            stack = this.valve.getTankConfig().getFluidTank().getFluid();
-            if (!stack.isEmpty()) {
-                int height = Math.min(89, (int) Math.ceil((float) this.valve.getTankConfig().getFluidAmount() / (float) this.valve.getTankConfig().getFluidCapacity() * 89));
-                this.drawFluid(guiGraphics, this.left + 20, this.top + 27 + (89 - height), stack, 48, height);
+        if (this.mainValve != null) {
+            if (this.valve.getTankConfig() != null && this.valve.getTankConfig().getFluidTank() != null) {
+                stack = this.valve.getTankConfig().getFluidTank().getFluid();
+                if (!stack.isEmpty()) {
+                    int height = Math.min(89, (int) Math.ceil((float) this.valve.getTankConfig().getFluidAmount() / (float) this.valve.getTankConfig().getFluidCapacity() * 89));
+                    this.drawFluid(guiGraphics, this.left + 20, this.top + 27 + (89 - height), stack, 48, height);
+                }
             }
         }
 
@@ -179,18 +188,22 @@ public class GuiValve extends Screen {
         guiGraphics.blit(tex_no_valve, this.left, this.top, 0, 0, this.xSize_NoValve, this.ySize_NoValve);
 
         Component fluid = Component.translatable("gui.ffs.fluid_valve.empty");
-        if (!this.valve.getTankConfig().isEmpty()) {
-            fluid = this.valve.getTankConfig().getFluidStack().getHoverName();
+        if (this.valve != null) {
+            if (!this.valve.getTankConfig().isEmpty()) {
+                fluid = this.valve.getTankConfig().getFluidStack().getHoverName();
+            }
         }
 
         guiGraphics.drawCenteredString(this.font, fluid, this.left + (this.xSize_NoValve / 2), this.top + 6, 16777215);
 
         FluidStack stack = null;
-        if (this.valve.getTankConfig() != null && this.valve.getTankConfig().getFluidTank() != null) {
-            stack = this.valve.getTankConfig().getFluidTank().getFluid();
-            if (!stack.isEmpty()) {
-                int height = Math.min(89, (int) Math.ceil((float) this.valve.getTankConfig().getFluidAmount() / (float) this.valve.getTankConfig().getFluidCapacity() * 89));
-                this.drawFluid(guiGraphics, this.left + 24, this.top + 27 + (89 - height), stack, 48, height);
+        if (this.valve != null) {
+            if (this.valve.getTankConfig() != null && this.valve.getTankConfig().getFluidTank() != null) {
+                stack = this.valve.getTankConfig().getFluidTank().getFluid();
+                if (!stack.isEmpty()) {
+                    int height = Math.min(89, (int) Math.ceil((float) this.valve.getTankConfig().getFluidAmount() / (float) this.valve.getTankConfig().getFluidCapacity() * 89));
+                    this.drawFluid(guiGraphics, this.left + 24, this.top + 27 + (89 - height), stack, 48, height);
+                }
             }
         }
 
@@ -226,22 +239,24 @@ public class GuiValve extends Screen {
 
     private void lockedFluidHoveringText(GuiGraphics guiGraphics) {
         List<Component> texts = new ArrayList<>();
-        if (this.valve.getTankConfig().isFluidLocked()) {
-            texts.add(
-                    (Component.translatable("gui.ffs.fluid_valve.fluid_base"))
-                            .append(" ")
-                            .append(Component.translatable("gui.ffs.fluid_valve.fluid_locked").withStyle(ChatFormatting.RED))
-            );
-            texts.add(
-                    (Component.translatable("description.ffs.fluid_valve.fluid", this.valve.getTankConfig().getLockedFluid().getHoverName()))
-                            .withStyle(ChatFormatting.GRAY)
-            );
-        } else {
-            texts.add(
-                    (Component.translatable("gui.ffs.fluid_valve.fluid_base"))
-                            .append(" ")
-                            .append(Component.translatable("gui.ffs.fluid_valve.fluid_unlocked").withStyle(ChatFormatting.GREEN))
-            );
+        if (this.valve != null) {
+            if (this.valve.getTankConfig().isFluidLocked()) {
+                texts.add(
+                        (Component.translatable("gui.ffs.fluid_valve.fluid_base"))
+                                .append(" ")
+                                .append(Component.translatable("gui.ffs.fluid_valve.fluid_locked").withStyle(ChatFormatting.RED))
+                );
+                texts.add(
+                        (Component.translatable("description.ffs.fluid_valve.fluid", this.valve.getTankConfig().getLockedFluid().getHoverName()))
+                                .withStyle(ChatFormatting.GRAY)
+                );
+            } else {
+                texts.add(
+                        (Component.translatable("gui.ffs.fluid_valve.fluid_base"))
+                                .append(" ")
+                                .append(Component.translatable("gui.ffs.fluid_valve.fluid_unlocked").withStyle(ChatFormatting.GREEN))
+                );
+            }
         }
 
         guiGraphics.renderTooltip(font, texts, Optional.empty(), this.mouseX, this.mouseY);
@@ -252,13 +267,15 @@ public class GuiValve extends Screen {
                 this.mouseY >= this.top + tank_y && this.mouseY < this.top + tank_y + height) {
             List<Component> texts = new ArrayList<>();
             texts.add(fluid);
-            texts.add(
-                    Component.literal(
-                            ChatFormatting.GRAY
-                                    + (GenericUtil.intToFancyNumber(this.valve.getTankConfig().getFluidAmount()) + " / " + GenericUtil.intToFancyNumber(this.valve.getTankConfig().getFluidCapacity()))
-                                    + " mB"
-                    )
-            );
+            if (this.valve != null) {
+                texts.add(
+                        Component.literal(
+                                ChatFormatting.GRAY
+                                        + (GenericUtil.intToFancyNumber(this.valve.getTankConfig().getFluidAmount()) + " / " + GenericUtil.intToFancyNumber(this.valve.getTankConfig().getFluidCapacity()))
+                                        + " mB"
+                        )
+                );
+            }
 
             guiGraphics.renderTooltip(font, texts, Optional.empty(), this.mouseX, this.mouseY);
         }

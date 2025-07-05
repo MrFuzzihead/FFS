@@ -15,12 +15,15 @@ public class FFSRenderTypes extends RenderType {
 
     public static final RenderType fluidRenderType = RenderType.create(
             FancyFluidStorage.MOD_ID + ":block_render_type",
-            DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP, VertexFormat.Mode.QUADS, 256, true, false,
+//            DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP, VertexFormat.Mode.QUADS, 256, true, false,
+            DefaultVertexFormat.BLOCK, VertexFormat.Mode.QUADS, 256, true, false,
             RenderType.CompositeState.builder()
                     .setLightmapState(LIGHTMAP)
-                    .setShaderState(POSITION_COLOR_TEX_LIGHTMAP_SHADER)
+//                    .setShaderState(POSITION_COLOR_TEX_LIGHTMAP_SHADER)
+                    .setShaderState(RENDERTYPE_TRANSLUCENT_SHADER)
                     .setTextureState(BLOCK_SHEET_MIPPED)
                     .setTransparencyState(TRANSLUCENT_TRANSPARENCY)
+                    .setCullState(NO_CULL)
                     .setWriteMaskState(COLOR_DEPTH_WRITE)
                     .createCompositeState(false)
     );

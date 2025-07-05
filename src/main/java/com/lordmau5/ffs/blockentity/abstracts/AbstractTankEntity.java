@@ -92,13 +92,15 @@ public abstract class AbstractTankEntity extends BlockEntity {
         }
     }
 
-//    @Nullable
-//    @Override
-//    public Packet<ClientGamePacketListener> getUpdatePacket() {
-//        ClientboundBlockEntityDataPacket packet = ClientboundBlockEntityDataPacket.create(this);
-//        saveAdditional(packet.getTag());
-//        return packet;
-//    }
+    @Nullable
+    @Override
+    public Packet<ClientGamePacketListener> getUpdatePacket() {
+        ClientboundBlockEntityDataPacket packet = ClientboundBlockEntityDataPacket.create(this);
+        if (getLevel() != null) {
+            saveAdditional(packet.getTag(), getLevel().registryAccess());
+        }
+        return packet;
+    }
 
     @NotNull
     @Override

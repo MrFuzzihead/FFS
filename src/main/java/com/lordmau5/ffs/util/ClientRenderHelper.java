@@ -16,6 +16,7 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.client.model.pipeline.QuadBakingVertexConsumer;
+import org.joml.Vector3f;
 
 import java.util.List;
 
@@ -39,23 +40,23 @@ public class ClientRenderHelper {
         return Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(location);
     }
 
-    private static BakedQuad createQuad(List<Vec3> vectors, float[] cols, TextureAtlasSprite sprite, Direction face, float u1, float u2, float v1, float v2) {
+    private static BakedQuad createQuad(List<Vector3f> vectors, float[] cols, TextureAtlasSprite sprite, Direction face, float u1, float u2, float v1, float v2) {
         QuadBakingVertexConsumer quadBaker = new QuadBakingVertexConsumer();
         Vec3 normal = Vec3.atLowerCornerOf(face.getNormal());
 
-        putVertex(quadBaker, normal, vectors.get(0).x, vectors.get(0).y, vectors.get(0).z, u1, v1, sprite, cols, face);
-        putVertex(quadBaker, normal, vectors.get(1).x, vectors.get(1).y, vectors.get(1).z, u1, v2, sprite, cols, face);
-        putVertex(quadBaker, normal, vectors.get(2).x, vectors.get(2).y, vectors.get(2).z, u2, v2, sprite, cols, face);
-        putVertex(quadBaker, normal, vectors.get(3).x, vectors.get(3).y, vectors.get(3).z, u2, v1, sprite, cols, face);
+        putVertex(quadBaker, normal, vectors.get(0), u1, v1, sprite, cols, face);
+        putVertex(quadBaker, normal, vectors.get(1), u1, v2, sprite, cols, face);
+        putVertex(quadBaker, normal, vectors.get(2), u2, v2, sprite, cols, face);
+        putVertex(quadBaker, normal, vectors.get(3), u2, v1, sprite, cols, face);
 
         return quadBaker.bakeQuad();
     }
 
-    private static void putVertex(QuadBakingVertexConsumer quadBaker, Vec3 normal, double x, double y, double z, float u, float v, TextureAtlasSprite sprite, float[] cols, Direction face) {
+    private static void putVertex(QuadBakingVertexConsumer quadBaker, Vec3 normal, Vector3f vector, float u, float v, TextureAtlasSprite sprite, float[] cols, Direction face) {
         quadBaker.setSprite(sprite);
         quadBaker.setDirection(face);
 
-        quadBaker.addVertex((float) x, (float) y, (float) z)
+        quadBaker.addVertex(vector)
                 .setNormal((float) normal.x, (float) normal.y, (float) normal.z)
                 .setColor(cols[0], cols[1], cols[2], cols[3])
                 .setUv(sprite.getU(u), sprite.getV(v));
@@ -97,32 +98,32 @@ public class ClientRenderHelper {
 
         switch (direction) {
             case DOWN -> {
-                BakedQuad quad = createQuad(ImmutableList.of(new Vec3(x, y, z2), new Vec3(x, y, z), new Vec3(x2, y, z), new Vec3(x2, y, z2)), cols, sprite, Direction.DOWN, minU, size, minV, size);
+                BakedQuad quad = createQuad(ImmutableList.of(new Vector3f(x, y, z2), new Vector3f(x, y, z), new Vector3f(x2, y, z), new Vector3f(x2, y, z2)), cols, sprite, Direction.DOWN, minU, size, minV, size);
 
                 consumer.putBulkData(ps.last(), quad, r, g, b, a, brightness, 0, false);
             }
             case UP -> {
-                BakedQuad quad = createQuad(ImmutableList.of(new Vec3(x, height, z), new Vec3(x, height, z2), new Vec3(x2, height, z2), new Vec3(x2, height, z)), cols, sprite, Direction.UP, minU, size, minV, size);
+                BakedQuad quad = createQuad(ImmutableList.of(new Vector3f(x, height, z), new Vector3f(x, height, z2), new Vector3f(x2, height, z2), new Vector3f(x2, height, z)), cols, sprite, Direction.UP, minU, size, minV, size);
 
                 consumer.putBulkData(ps.last(), quad, r, g, b, a, brightness, 0, false);
             }
             case NORTH -> {
-                BakedQuad quad = createQuad(ImmutableList.of(new Vec3(x2, height, z), new Vec3(x2, y, z), new Vec3(x, y, z), new Vec3(x, height, z)), cols, sprite, Direction.NORTH, minU, size, minV, size);
+                BakedQuad quad = createQuad(ImmutableList.of(new Vector3f(x2, height, z), new Vector3f(x2, y, z), new Vector3f(x, y, z), new Vector3f(x, height, z)), cols, sprite, Direction.NORTH, minU, size, minV, size);
 
                 consumer.putBulkData(ps.last(), quad, r, g, b, a, brightness, 0, false);
             }
             case SOUTH -> {
-                BakedQuad quad = createQuad(ImmutableList.of(new Vec3(x, height, z2), new Vec3(x, y, z2), new Vec3(x2, y, z2), new Vec3(x2, height, z2)), cols, sprite, Direction.SOUTH, minU, size, minV, size);
+                BakedQuad quad = createQuad(ImmutableList.of(new Vector3f(x, height, z2), new Vector3f(x, y, z2), new Vector3f(x2, y, z2), new Vector3f(x2, height, z2)), cols, sprite, Direction.SOUTH, minU, size, minV, size);
 
                 consumer.putBulkData(ps.last(), quad, r, g, b, a, brightness, 0, false);
             }
             case WEST -> {
-                BakedQuad quad = createQuad(ImmutableList.of(new Vec3(x, height, z), new Vec3(x, y, z), new Vec3(x, y, z2), new Vec3(x, height, z2)), cols, sprite, Direction.WEST, minU, size, minV, size);
+                BakedQuad quad = createQuad(ImmutableList.of(new Vector3f(x, height, z), new Vector3f(x, y, z), new Vector3f(x, y, z2), new Vector3f(x, height, z2)), cols, sprite, Direction.WEST, minU, size, minV, size);
 
                 consumer.putBulkData(ps.last(), quad, r, g, b, a, brightness, 0, false);
             }
             case EAST -> {
-                BakedQuad quad = createQuad(ImmutableList.of(new Vec3(x2, height, z2), new Vec3(x2, y, z2), new Vec3(x2, y, z), new Vec3(x2, height, z)), cols, sprite, Direction.EAST, minU, size, minV, size);
+                BakedQuad quad = createQuad(ImmutableList.of(new Vector3f(x2, height, z2), new Vector3f(x2, y, z2), new Vector3f(x2, y, z), new Vector3f(x2, height, z)), cols, sprite, Direction.EAST, minU, size, minV, size);
 
                 consumer.putBulkData(ps.last(), quad, r, g, b, a, brightness, 0, false);
             }
