@@ -46,6 +46,14 @@ public class TankConfig {
         return new FluidStack(this.lockedFluid, 1000);
     }
 
+    public FluidStack getFluidOrLockedFluid() {
+        if (this.getFluidStack().isEmpty() && this.isFluidLocked()) {
+            return this.getLockedFluid();
+        }
+
+        return this.getFluidStack();
+    }
+
     public FluidTank getFluidTank() {
         return this.fluidTank;
     }

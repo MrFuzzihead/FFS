@@ -15,6 +15,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec2;
+import net.neoforged.neoforge.fluids.FluidStack;
 import snownee.jade.api.IWailaClientRegistration;
 import snownee.jade.api.IWailaPlugin;
 import snownee.jade.api.WailaPlugin;
@@ -51,10 +52,11 @@ public class JadePlugin implements IWailaPlugin {
 
             float progress = config.getFilledPercentage();
 
-            boolean isFluidEmpty = config.getFluidStack().isEmpty();
+            FluidStack stack = config.getFluidOrLockedFluid();
+            boolean isFluidEmpty = stack.isEmpty();
 
-            FluidView view = new FluidView(helper.fluid(JadeFluidObject.of(config.getFluidStack().getFluid())));
-            view.fluidName = isFluidEmpty ? Component.literal("Empty") : config.getFluidStack().getHoverName();
+            FluidView view = new FluidView(helper.fluid(JadeFluidObject.of(stack.getFluid())));
+            view.fluidName = isFluidEmpty ? Component.literal("Empty") : stack.getHoverName();
             view.current = FluidTextHelper.getUnicodeMillibuckets(isFluidEmpty ? config.getFluidCapacity() : config.getFluidAmount(), true);
 
             ProgressStyle progressStyle = helper.progressStyle().overlay(view.overlay);

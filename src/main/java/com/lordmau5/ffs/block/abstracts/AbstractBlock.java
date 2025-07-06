@@ -81,7 +81,6 @@ public abstract class AbstractBlock extends Block implements EntityBlock {
 
     @Override
     protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult) {
-//        return super.useItemOn(stack, state, level, pos, player, hand, hitResult);
         if (level.isClientSide()) return ItemInteractionResult.SUCCESS;
 
         if (player.isShiftKeyDown()) return ItemInteractionResult.FAIL;
