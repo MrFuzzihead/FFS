@@ -100,7 +100,6 @@ public class GuiValve extends Screen {
             this.left = (this.width - this.xSize_NoValve) / 2;
             this.top = (this.height - this.ySize_NoValve) / 2;
             if (this.mainValve != null) {
-                // TODO: Button isn't being rendered?
                 this.addRenderableWidget(this.lockFluidButton = new GuiButtonLockFluid(this.left + 65, this.top + 26, this.mainValve.getTankConfig().isFluidLocked(), (button) -> {
                     this.lockFluidButton.toggleState();
 
