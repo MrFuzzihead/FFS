@@ -4,6 +4,7 @@ import com.lordmau5.ffs.FancyFluidStorage;
 import com.lordmau5.ffs.blockentity.abstracts.AbstractTankEntity;
 import com.lordmau5.ffs.blockentity.abstracts.AbstractTankValve;
 import com.lordmau5.ffs.blockentity.interfaces.INameableEntity;
+import com.lordmau5.ffs.blockentity.util.TankConfig;
 import com.lordmau5.ffs.network.FFSPacket;
 import com.lordmau5.ffs.network.NetworkHandler;
 import com.lordmau5.ffs.util.ClientRenderHelper;
@@ -21,8 +22,10 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.material.Fluid;
 import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
 import net.neoforged.neoforge.fluids.FluidStack;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
@@ -36,9 +39,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 public class GuiValve extends Screen {
-//    private static final ResourceLocation tex_valve = ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID + ":textures/gui/gui_tank_valve.png");
     private static final ResourceLocation tex_valve = ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID,"textures/gui/gui_tank_valve.png");
-//    private static final ResourceLocation tex_no_valve = ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID + ":textures/gui/gui_tank_no_valve.png");
     private static final ResourceLocation tex_no_valve = ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID,"textures/gui/gui_tank_no_valve.png");
     private final @Nullable AbstractTankValve valve;
     private final @Nullable AbstractTankValve mainValve;
@@ -148,86 +149,70 @@ public class GuiValve extends Screen {
         return false;
     }
 
-    private void drawGUIValve(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
-        guiGraphics.blit(tex_valve, this.left, this.top, 0, 0, this.xSize_Valve, this.ySize_Valve);
+    private @NonNull FluidStack getFluidStack() {
+        if (this.valve == null) return FluidStack.EMPTY;
 
-        Component fluid = Component.translatable("gui.ffs.fluid_valve.empty");
-        if (this.valve != null) {
-            if (!this.valve.getTankConfig().getFluidStack().isEmpty()) {
-                fluid = this.valve.getTankConfig().getFluidStack().getHoverName();
-            }
+        TankConfig config = this.valve.getTankConfig();
+        if (config == null || config.getFluidTank() == null) return FluidStack.EMPTY;
+
+        return config.getFluidOrLockedFluid();
+    }
+
+    private void drawGUINoValve(GuiGraphics guiGraphics) {
+        guiGraphics.blit(tex_no_valve, this.left, this.top, 0, 0, this.xSize_NoValve, this.ySize_NoValve);
+
+        if (this.valve == null) {
+            return;
         }
 
-        guiGraphics.drawCenteredString(this.font, fluid, this.left + (this.xSize_Valve / 2), this.top + 6, 16777215);
-
-        FluidStack stack = null;
-        if (this.mainValve != null) {
-            if (this.valve.getTankConfig() != null && this.valve.getTankConfig().getFluidTank() != null) {
-                stack = this.valve.getTankConfig().getFluidTank().getFluid();
-                if (!stack.isEmpty()) {
-                    int height = Math.min(89, (int) Math.ceil((float) this.valve.getTankConfig().getFluidAmount() / (float) this.valve.getTankConfig().getFluidCapacity() * 89));
-                    this.drawFluid(guiGraphics, this.left + 20, this.top + 27 + (89 - height), stack, 48, height);
-                }
-            }
+        FluidStack stack = getFluidStack();
+        if (!stack.is(FluidStack.EMPTY.getFluidType())) {
+            int height = Math.min(89, (int) Math.ceil((float) this.valve.getTankConfig().getFluidAmount() / (float) this.valve.getTankConfig().getFluidCapacity() * 89));
+            this.drawFluid(guiGraphics, this.left + 24, this.top + 27 + (89 - height), stack, 48, height);
         }
+    }
+
+    private void drawGUIValve(GuiGraphics guiGraphics, float partialTicks) {
+        this.drawGUINoValve(guiGraphics);
 
         if (this.tile instanceof INameableEntity) {
             drawTileName(guiGraphics, this.left, this.top, partialTicks);
         }
-
-        if (this.mouseX >= this.left + 62 && this.mouseX < this.left + 62 + 8 && this.mouseY >= this.top + 26 && this.mouseY < this.top + 26 + 8) {
-            lockedFluidHoveringText(guiGraphics);
-        } else {
-            if (stack != null) {
-                fluidHoveringText(guiGraphics, fluid, 20, 27, 89);
-            }
-        }
     }
 
-    private void drawGUINoValve(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
-        guiGraphics.blit(tex_no_valve, this.left, this.top, 0, 0, this.xSize_NoValve, this.ySize_NoValve);
+    private void drawFluidHoverText(GuiGraphics guiGraphics) {
+        FluidStack stack = getFluidStack();
+        if (stack.is(FluidStack.EMPTY.getFluidType())) return;
 
-        Component fluid = Component.translatable("gui.ffs.fluid_valve.empty");
-        if (this.valve != null) {
-            if (!this.valve.getTankConfig().isEmpty()) {
-                fluid = this.valve.getTankConfig().getFluidStack().getHoverName();
-            }
-        }
-
+        Component fluid = stack.getHoverName();
         guiGraphics.drawCenteredString(this.font, fluid, this.left + (this.xSize_NoValve / 2), this.top + 6, 16777215);
-
-        FluidStack stack = null;
-        if (this.valve != null) {
-            if (this.valve.getTankConfig() != null && this.valve.getTankConfig().getFluidTank() != null) {
-                stack = this.valve.getTankConfig().getFluidTank().getFluid();
-                if (!stack.isEmpty()) {
-                    int height = Math.min(89, (int) Math.ceil((float) this.valve.getTankConfig().getFluidAmount() / (float) this.valve.getTankConfig().getFluidCapacity() * 89));
-                    this.drawFluid(guiGraphics, this.left + 24, this.top + 27 + (89 - height), stack, 48, height);
-                }
-            }
-        }
 
         if (this.mouseX >= this.left + 66 && this.mouseX < this.left + 66 + 8 && this.mouseY >= this.top + 26 && this.mouseY < this.top + 26 + 8) {
             lockedFluidHoveringText(guiGraphics);
         } else {
-            if (stack != null) {
-                fluidHoveringText(guiGraphics, fluid, 24, 27, 89);
-            }
+            fluidHoveringText(guiGraphics, fluid, 24, 27, 89);
         }
     }
 
     @Override
-    public void render(@NotNull GuiGraphics guiGraphics, int x, int y, float partialTicks) {
-        super.render(guiGraphics, x, y, partialTicks);
-
-        this.mouseX = x;
-        this.mouseY = y;
+    public void renderBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.renderBackground(guiGraphics, mouseX, mouseY, partialTick);
 
         if (isValve) {
-            drawGUIValve(guiGraphics, mouseX, mouseY, partialTicks);
+            drawGUIValve(guiGraphics, partialTick);
         } else {
-            drawGUINoValve(guiGraphics, mouseX, mouseY, partialTicks);
+            drawGUINoValve(guiGraphics);
         }
+    }
+
+    @Override
+    public void render(@NotNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.render(guiGraphics, mouseX, mouseY, partialTick);
+
+        this.mouseX = mouseX;
+        this.mouseY = mouseY;
+
+        drawFluidHoverText(guiGraphics);
     }
 
     private void drawTileName(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
