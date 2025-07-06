@@ -7,6 +7,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -44,21 +45,22 @@ public class ClientRenderHelper {
         QuadBakingVertexConsumer quadBaker = new QuadBakingVertexConsumer();
         Vec3 normal = Vec3.atLowerCornerOf(face.getNormal());
 
-        putVertex(quadBaker, normal, vectors.get(0), u1, v1, sprite, cols, face, brightness);
-        putVertex(quadBaker, normal, vectors.get(1), u1, v2, sprite, cols, face, brightness);
-        putVertex(quadBaker, normal, vectors.get(2), u2, v2, sprite, cols, face, brightness);
-        putVertex(quadBaker, normal, vectors.get(3), u2, v1, sprite, cols, face, brightness);
+        quadBaker.setSprite(sprite);
+        quadBaker.setDirection(face);
+
+        putVertex(quadBaker, normal, vectors.get(0), u1, v1, sprite, cols, brightness);
+        putVertex(quadBaker, normal, vectors.get(1), u1, v2, sprite, cols, brightness);
+        putVertex(quadBaker, normal, vectors.get(2), u2, v2, sprite, cols, brightness);
+        putVertex(quadBaker, normal, vectors.get(3), u2, v1, sprite, cols, brightness);
 
         return quadBaker.bakeQuad();
     }
 
-    private static void putVertex(QuadBakingVertexConsumer quadBaker, Vec3 normal, Vector3f vector, float u, float v, TextureAtlasSprite sprite, float[] cols, Direction face, int brightness) {
-        quadBaker.setSprite(sprite);
-        quadBaker.setDirection(face);
-
+    private static void putVertex(QuadBakingVertexConsumer quadBaker, Vec3 normal, Vector3f vector, float u, float v, TextureAtlasSprite sprite, float[] cols, int brightness) {
         quadBaker.addVertex(vector)
                 .setColor(cols[0], cols[1], cols[2], cols[3])
                 .setUv(sprite.getU(u), sprite.getV(v))
+                .setOverlay(OverlayTexture.NO_OVERLAY)
                 .setLight(brightness)
                 .setNormal((float) normal.x, (float) normal.y, (float) normal.z);
     }
@@ -77,10 +79,11 @@ public class ClientRenderHelper {
             return;
         }
 
-        float size = flowing ? 0.5f : 1.0f;
+        float sizeX = flowing ? 0.5f : 1.0f;
+        float sizeY = flowing ? 0.5f : 1.0f;
 
         float minU = sprite.getUOffset(sprite.getU0());
-        float minV = sprite.getVOffset(sprite.getV0());
+        float minV = flowing ? sizeY * (1.0f - height) : sprite.getVOffset(sprite.getV0());
 
         float x = 0.0f;
         float y = 0.0f;
@@ -99,32 +102,32 @@ public class ClientRenderHelper {
 
         switch (direction) {
             case DOWN -> {
-                BakedQuad quad = createQuad(ImmutableList.of(new Vector3f(x, y, z2), new Vector3f(x, y, z), new Vector3f(x2, y, z), new Vector3f(x2, y, z2)), cols, sprite, Direction.DOWN, minU, size, minV, size, brightness);
+                BakedQuad quad = createQuad(ImmutableList.of(new Vector3f(x, y, z2), new Vector3f(x, y, z), new Vector3f(x2, y, z), new Vector3f(x2, y, z2)), cols, sprite, Direction.DOWN, minU, sizeX, minV, sizeY, brightness);
 
                 consumer.putBulkData(ps.last(), quad, r, g, b, a, brightness, 0, false);
             }
             case UP -> {
-                BakedQuad quad = createQuad(ImmutableList.of(new Vector3f(x, height, z), new Vector3f(x, height, z2), new Vector3f(x2, height, z2), new Vector3f(x2, height, z)), cols, sprite, Direction.UP, minU, size, minV, size, brightness);
+                BakedQuad quad = createQuad(ImmutableList.of(new Vector3f(x, height, z), new Vector3f(x, height, z2), new Vector3f(x2, height, z2), new Vector3f(x2, height, z)), cols, sprite, Direction.UP, minU, sizeX, minV, sizeY, brightness);
 
                 consumer.putBulkData(ps.last(), quad, r, g, b, a, brightness, 0, false);
             }
             case NORTH -> {
-                BakedQuad quad = createQuad(ImmutableList.of(new Vector3f(x2, height, z), new Vector3f(x2, y, z), new Vector3f(x, y, z), new Vector3f(x, height, z)), cols, sprite, Direction.NORTH, minU, size, minV, size, brightness);
+                BakedQuad quad = createQuad(ImmutableList.of(new Vector3f(x2, height, z), new Vector3f(x2, y, z), new Vector3f(x, y, z), new Vector3f(x, height, z)), cols, sprite, Direction.NORTH, minU, sizeX, minV, sizeY, brightness);
 
                 consumer.putBulkData(ps.last(), quad, r, g, b, a, brightness, 0, false);
             }
             case SOUTH -> {
-                BakedQuad quad = createQuad(ImmutableList.of(new Vector3f(x, height, z2), new Vector3f(x, y, z2), new Vector3f(x2, y, z2), new Vector3f(x2, height, z2)), cols, sprite, Direction.SOUTH, minU, size, minV, size, brightness);
+                BakedQuad quad = createQuad(ImmutableList.of(new Vector3f(x, height, z2), new Vector3f(x, y, z2), new Vector3f(x2, y, z2), new Vector3f(x2, height, z2)), cols, sprite, Direction.SOUTH, minU, sizeX, minV, sizeY, brightness);
 
                 consumer.putBulkData(ps.last(), quad, r, g, b, a, brightness, 0, false);
             }
             case WEST -> {
-                BakedQuad quad = createQuad(ImmutableList.of(new Vector3f(x, height, z), new Vector3f(x, y, z), new Vector3f(x, y, z2), new Vector3f(x, height, z2)), cols, sprite, Direction.WEST, minU, size, minV, size, brightness);
+                BakedQuad quad = createQuad(ImmutableList.of(new Vector3f(x, height, z), new Vector3f(x, y, z), new Vector3f(x, y, z2), new Vector3f(x, height, z2)), cols, sprite, Direction.WEST, minU, sizeX, minV, sizeY, brightness);
 
                 consumer.putBulkData(ps.last(), quad, r, g, b, a, brightness, 0, false);
             }
             case EAST -> {
-                BakedQuad quad = createQuad(ImmutableList.of(new Vector3f(x2, height, z2), new Vector3f(x2, y, z2), new Vector3f(x2, y, z), new Vector3f(x2, height, z)), cols, sprite, Direction.EAST, minU, size, minV, size, brightness);
+                BakedQuad quad = createQuad(ImmutableList.of(new Vector3f(x2, height, z2), new Vector3f(x2, y, z2), new Vector3f(x2, y, z), new Vector3f(x2, height, z)), cols, sprite, Direction.EAST, minU, sizeX, minV, sizeY, brightness);
 
                 consumer.putBulkData(ps.last(), quad, r, g, b, a, brightness, 0, false);
             }

@@ -279,17 +279,13 @@ public class ValveRenderer implements BlockEntityRenderer<BlockEntityFluidValve>
 
             BlockPos offset = rb.pos.subtract(valvePos);
 
-            renderFluidBlock(level, still, flowing, ps, vb, rb, offset, color, rb.layer == topLayer);
+            renderFluidBlock(level, still, flowing, ps, vb, rb, offset, color, fluid, rb.layer == topLayer);
         }
-    }
-
-    private int getLightColor(Level level, BlockPos pos) {
-        return LevelRenderer.getLightColor(level, getBlockState(level, pos), pos);
     }
 
     private int renderGasBlock(Level level, TextureAtlasSprite still, PoseStack ps, MultiBufferSource vb, RenderBlock rb, BlockPos offset, int color, boolean isTop) {
         BlockPos pos = rb.pos;
-        int brightness = getLightColor(level, pos);
+        int brightness = LevelRenderer.getLightColor(level, pos);
 
         Vec3 cameraPos = Minecraft.getInstance().getCameraEntity().getEyePosition();
         Vec3 difference = cameraPos.subtract(pos.getX(), pos.getY(), pos.getZ());
@@ -331,9 +327,11 @@ public class ValveRenderer implements BlockEntityRenderer<BlockEntityFluidValve>
         return renderedFaces;
     }
 
-    private int renderFluidBlock(Level level, TextureAtlasSprite still, TextureAtlasSprite flowing, PoseStack ps, MultiBufferSource vb, RenderBlock rb, BlockPos offset, int color, boolean isTop) {
+    private int renderFluidBlock(Level level, TextureAtlasSprite still, TextureAtlasSprite flowing, PoseStack ps, MultiBufferSource vb, RenderBlock rb, BlockPos offset, int color, FluidStack fluidStack, boolean isTop) {
         BlockPos pos = rb.pos;
-        int brightness = getLightColor(level, pos);
+        int blockBrightness = LevelRenderer.getLightColor(level, pos);
+
+        int brightness = Math.max(blockBrightness, fluidStack.getFluidType().getLightLevel(fluidStack) << 4);
 
         Vec3 cameraPos = Minecraft.getInstance().getCameraEntity().getEyePosition();
         Vec3 difference = cameraPos.subtract(pos.getX(), (pos.getY() - 1), pos.getZ()).subtract(0.0f, rb.height, 0.0f);
