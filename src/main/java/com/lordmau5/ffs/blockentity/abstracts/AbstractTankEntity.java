@@ -9,6 +9,7 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -85,8 +86,6 @@ public abstract class AbstractTankEntity extends BlockEntity {
 
         boolean oldIsValid = isValid();
 
-        loadAdditional(pkt.getTag(), lookupProvider);
-
         if (getLevel() != null && getLevel().isClientSide() && oldIsValid != isValid()) {
             markForUpdateNow();
         }
@@ -95,19 +94,13 @@ public abstract class AbstractTankEntity extends BlockEntity {
     @Nullable
     @Override
     public Packet<ClientGamePacketListener> getUpdatePacket() {
-        ClientboundBlockEntityDataPacket packet = ClientboundBlockEntityDataPacket.create(this);
-        if (getLevel() != null) {
-            saveAdditional(packet.getTag(), getLevel().registryAccess());
-        }
-        return packet;
+        return ClientboundBlockEntityDataPacket.create(this);
     }
 
     @NotNull
     @Override
     public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
-        CompoundTag tag = super.getUpdateTag(registries);
-        saveAdditional(tag, registries);
-        return tag;
+        return this.saveWithoutMetadata(registries);
     }
 
     public void doUpdate() {
@@ -121,7 +114,7 @@ public abstract class AbstractTankEntity extends BlockEntity {
 
         if (--this.needsUpdate == 0) {
             BlockState state = getLevel().getBlockState(getBlockPos());
-            getLevel().sendBlockUpdated(getBlockPos(), state, state, 3);
+            getLevel().sendBlockUpdated(getBlockPos(), state, state, Block.UPDATE_ALL);
             doUpdate();
             setChanged();
         }
