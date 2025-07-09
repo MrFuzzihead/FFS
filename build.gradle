@@ -92,23 +92,17 @@ configurations {
 repositories {
     maven {
         // TOP
-        url = "https://maven.k-4u.nl"
+        url 'https://maven.k-4u.nl'
     }
-    /*maven {
-        // location of the maven that hosts JEI files
-        name = "Progwml6 maven"
-        url = "https://dvs1.progwml6.com/files/maven/"
-    }*/
     maven {
         // location of a maven for JEI files
-        name = "ModMaven"
-        url = "https://modmaven.dev"
+        name 'ModMaven'
+        url 'https://modmaven.dev'
     }
     maven {
-        url 'https://squiddev.cc/maven/'
+        url 'https://maven.squiddev.cc'
         content {
             includeGroup("cc.tweaked")
-            includeModule("org.squiddev", "Cobalt")
         }
     }
     maven {
@@ -128,14 +122,14 @@ dependencies {
     // For all intends and purposes: You can treat this dependency as if it is a normal library you would use.
     implementation "net.neoforged:neoforge:${neo_version}"
 
-    implementation (project.dependencies.create("mcjty.theoneprobe:theoneprobe:${top_version}") {
+    localRuntime compileOnly(project.dependencies.create("mcjty.theoneprobe:theoneprobe:${top_version}") {
         transitive = false
     })
 
-    compileOnly("cc.tweaked:cc-tweaked-${cct_mc_version}-core-api:${cct_version}")
-    compileOnly("cc.tweaked:cc-tweaked-${cct_mc_version}-forge-api:${cct_version}")
+    localRuntime compileOnly("cc.tweaked:cc-tweaked-${cct_mc_version}-forge-api:${cct_version}")
+    localRuntime runtimeOnly("cc.tweaked:cc-tweaked-${cct_mc_version}-forge:${cct_version}")
 
-    implementation ("curse.maven:jade-324717:${jade_cf_file_id}")
+    localRuntime compileOnly("curse.maven:jade-324717:${jade_cf_file_id}")
 
     // Example mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime

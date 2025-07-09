@@ -14,9 +14,9 @@ import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.block.Blocks;
 import net.neoforged.neoforge.common.Tags;
 import net.neoforged.neoforge.common.conditions.ModLoadedCondition;
+import net.neoforged.neoforge.common.crafting.ConditionalRecipeOutput;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
 
 public class FFSRecipes extends RecipeProvider {
 
@@ -25,10 +25,9 @@ public class FFSRecipes extends RecipeProvider {
         super(generatorIn.getPackOutput(), lookupProvider);
     }
 
-    //TODO
-//    private ConditionalRecipe.Builder whenModLoaded(ShapelessRecipeBuilder recipe, String modid) {
-//        return ConditionalRecipe.builder().addCondition(new ModLoadedCondition(modid)).addRecipe(recipe::save);
-//    }
+    private void whenModLoaded(RecipeOutput consumer, String modid, RecipeBuilder recipeBuilder) {
+        recipeBuilder.save(consumer.withConditions(new ModLoadedCondition(modid)));
+    }
 
     @Override
     protected void buildRecipes(RecipeOutput consumer)
@@ -44,14 +43,13 @@ public class FFSRecipes extends RecipeProvider {
                 .unlockedBy("has_item", InventoryChangeTrigger.TriggerInstance.hasItems(Items.BUCKET))
                 .save(consumer);
 
-        //TODO
-//        var cc_computer = BuiltInRegistries.ITEM.getHolder(new ResourceLocation("computercraft", "computer_normal"));
-//        cc_computer.ifPresent(itemHolder -> whenModLoaded(ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, FFSBlocks.tankComputer.get())
-//                        .requires(FFSBlocks.fluidValve.get())
-//                        .requires(itemHolder.value())
-//                        .group(FancyFluidStorage.MOD_ID)
-//                        .unlockedBy("has_item", InventoryChangeTrigger.TriggerInstance.hasItems(FFSBlocks.fluidValve.get(), itemHolder.value()))
-//                , "computercraft").build(consumer, "ffs", "tank_computer"));
+        var cc_computer = BuiltInRegistries.ITEM.getHolder(ResourceLocation.fromNamespaceAndPath("computercraft", "computer_normal"));
+        cc_computer.ifPresent(itemHolder -> whenModLoaded(consumer, "computercraft", ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, FFSBlocks.tankComputer.get())
+                        .requires(FFSBlocks.fluidValve.get())
+                        .requires(itemHolder.value())
+                        .group(FancyFluidStorage.MOD_ID)
+                        .unlockedBy("has_item", InventoryChangeTrigger.TriggerInstance.hasItems(FFSBlocks.fluidValve.get(), itemHolder.value()))
+        ));
 
         ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, FFSItems.titEgg.get())
                 .requires(FFSBlocks.fluidValve.get())
