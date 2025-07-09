@@ -1,12 +1,16 @@
 package com.lordmau5.ffs;
 
+import com.lordmau5.ffs.blockentity.tanktiles.BlockEntityTankComputer;
+import com.lordmau5.ffs.blockentity.valves.BlockEntityFluidValve;
 import com.lordmau5.ffs.compat.Compatibility;
+import com.lordmau5.ffs.compat.computercraft.TankComputerPeripheral;
 import com.lordmau5.ffs.config.ServerConfig;
 import com.lordmau5.ffs.datagen.DataGenerators;
 import com.lordmau5.ffs.holder.*;
 import com.lordmau5.ffs.network.NetworkHandler;
 import com.lordmau5.ffs.util.Config;
 import com.lordmau5.ffs.util.GenericUtil;
+import dan200.computercraft.api.peripheral.PeripheralCapability;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
@@ -22,6 +26,8 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.registries.RegisterEvent;
 
 @Mod(FancyFluidStorage.MOD_ID)
@@ -31,7 +37,6 @@ public class FancyFluidStorage {
     public static final TagKey<Block> TANK_BLACKLIST = TagKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath(MOD_ID, "invalid_for_tank"));
 
     public FancyFluidStorage(IEventBus bus, ModContainer container) {
-        bus.addListener(this::setup);
         bus.addListener(this::setupClient);
         bus.addListener(this::registerCreativeTab);
 
@@ -47,13 +52,13 @@ public class FancyFluidStorage {
         bus.register(DataGenerators.class);
 
         GenericUtil.init();
+        Compatibility.init(bus);
+
+        bus.addListener((RegisterCapabilitiesEvent event) -> {
+            event.registerBlockEntity(Capabilities.FluidHandler.BLOCK, FFSBlockEntities.tileEntityFluidValve.get(), BlockEntityFluidValve::getFluidHandler);
+        });
 
         container.registerConfig(ModConfig.Type.SERVER, Config.walkClass(ServerConfig.class, bus));
-    }
-
-    private void setup(final FMLCommonSetupEvent event) {
-
-        Compatibility.init();
     }
 
     private void setupClient(final FMLClientSetupEvent event) {

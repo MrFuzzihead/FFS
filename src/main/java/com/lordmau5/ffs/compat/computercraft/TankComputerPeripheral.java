@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.Optional;
 
 public record TankComputerPeripheral(BlockEntityTankComputer computer) implements IPeripheral {
-
     @Override
     public String getType() {
         return "ffs_tank_computer";
@@ -93,6 +92,7 @@ public record TankComputerPeripheral(BlockEntityTankComputer computer) implement
         }
 
         computer.markForUpdateNow();
+        computer.getMainValve().markForUpdateNow();
     }
 
     @LuaFunction(mainThread = true)

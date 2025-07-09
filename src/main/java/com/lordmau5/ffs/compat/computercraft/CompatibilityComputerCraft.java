@@ -1,18 +1,21 @@
 package com.lordmau5.ffs.compat.computercraft;
 
 import com.lordmau5.ffs.blockentity.tanktiles.BlockEntityTankComputer;
+import com.lordmau5.ffs.holder.FFSBlockEntities;
 import dan200.computercraft.api.peripheral.IPeripheral;
+import dan200.computercraft.api.peripheral.PeripheralCapability;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 
 public class CompatibilityComputerCraft {
 
-    //TODO caps
-//    public static Capability<IPeripheral> CAPABILITY_PERIPHERAL;
-
-    public static void initialize() {
-//        CAPABILITY_PERIPHERAL = CapabilityManager.get(new CapabilityToken<>() {});
-    }
-
-    public static TankComputerPeripheral getPeripheral(BlockEntityTankComputer tankComputer) {
-        return new TankComputerPeripheral(tankComputer);
+    public static void initialize(IEventBus bus) {
+        bus.addListener((RegisterCapabilitiesEvent event) -> {
+            event.registerBlockEntity(
+                    PeripheralCapability.get(),
+                    FFSBlockEntities.tankComputer.get(),
+                    (blockEntity, _class) -> new TankComputerPeripheral(blockEntity)
+            );
+        });
     }
 }

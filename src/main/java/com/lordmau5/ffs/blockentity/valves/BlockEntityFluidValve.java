@@ -17,11 +17,9 @@ import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Optional;
 
 public class BlockEntityFluidValve extends AbstractTankValve {
-
-    //TODO
-//    private final LazyOptional<IFluidHandler> holder = LazyOptional.of(() -> getTankConfig().getFluidTank());
 
     public BlockEntityFluidValve(BlockPos pos, BlockState state) {
         super(FFSBlockEntities.tileEntityFluidValve.get(), pos, state);
@@ -58,12 +56,12 @@ public class BlockEntityFluidValve extends AbstractTankValve {
         }
     }
 
-    //TODO
-//    @Override
-//    @Nonnull
-//    public <T> LazyOptional<T> getCapability(@Nonnull Capability<T> cap, @Nullable Direction side) {
-//        if (cap == ForgeCapabilities.FLUID_HANDLER)
-//            return holder.cast();
-//        return super.getCapability(cap, side);
-//    }
+    @Nullable
+    public IFluidHandler getFluidHandler(Direction side) {
+        if (side != getTileFacing()) {
+            return getTankConfig().getFluidTank();
+        } else {
+            return null;
+        }
+    }
 }
