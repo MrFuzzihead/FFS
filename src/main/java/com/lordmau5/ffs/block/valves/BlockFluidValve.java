@@ -5,6 +5,7 @@ import com.lordmau5.ffs.blockentity.abstracts.AbstractTankValve;
 import com.lordmau5.ffs.blockentity.util.TankConfig;
 import com.lordmau5.ffs.blockentity.valves.BlockEntityFluidValve;
 import com.lordmau5.ffs.holder.FFSBlockEntities;
+import com.lordmau5.ffs.holder.FFSDataComponentType;
 import com.lordmau5.ffs.util.FFSStateProps;
 import com.lordmau5.ffs.util.GenericUtil;
 import net.minecraft.ChatFormatting;
@@ -72,10 +73,11 @@ public class BlockFluidValve extends AbstractBlock {
 
         if (tankConfig.isEmpty()) return;
 
-        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
-        CompoundTag tag = (data == null || data.isEmpty()) ? new CompoundTag() : data.copyTag();
-        // TODO: Write to copy?
-        tankConfig.writeToNBT(tag, registries); //, new CompoundTag()));
+        CompoundTag tag = stack.has(FFSDataComponentType.TANK_CONFIG) ? stack.get(FFSDataComponentType.TANK_CONFIG) : new CompoundTag();
+
+        tankConfig.writeToNBT(tag, registries);
+
+        stack.set(FFSDataComponentType.TANK_CONFIG, tag);
     }
 
     @Override
@@ -128,18 +130,16 @@ public class BlockFluidValve extends AbstractBlock {
     }
 
     private @Nonnull FluidStack loadFluidStackFromTankConfig(ItemStack stack, HolderLookup.Provider registries) {
-        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
-        if (data == null) {
+        if (!stack.has(FFSDataComponentType.TANK_CONFIG)) {
             return FluidStack.EMPTY;
         }
 
-        CompoundTag tag = data.isEmpty() ? new CompoundTag() : data.copyTag();
-        if (!tag.contains("TankConfig")) {
+        CompoundTag tag = stack.get(FFSDataComponentType.TANK_CONFIG);
+        if (tag == null || !tag.contains("Fluid")) {
             return FluidStack.EMPTY;
         }
 
-        CompoundTag tankConfig = tag.getCompound("TankConfig");
-        return FluidStack.parse(registries, tankConfig).orElse(FluidStack.EMPTY);
+        return FluidStack.parse(registries, tag.getCompound("Fluid")).orElse(FluidStack.EMPTY);
     }
 
     @Override

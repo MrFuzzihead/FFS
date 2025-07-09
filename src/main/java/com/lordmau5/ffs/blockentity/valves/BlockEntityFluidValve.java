@@ -46,10 +46,6 @@ public class BlockEntityFluidValve extends AbstractTankValve {
         }
 
         Fluid fluid = fluidStack.getFluid();
-        if (fluid == null) {
-            return;
-        }
-
         if (fluid == Fluids.WATER) {
             if (level.isRaining()) {
                 int rate = (int) Math.floor(level.rainLevel * 5 * level.getBiome(pos).value().getModifiedClimateSettings().downfall());

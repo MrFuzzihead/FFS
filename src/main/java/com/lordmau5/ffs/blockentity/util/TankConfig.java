@@ -86,14 +86,12 @@ public class TankConfig {
         return this.fluidTank.isEmpty();
     }
 
-    public void readFromNBT(CompoundTag mainTag, HolderLookup.Provider registries) {
+    public void readFromNBT(CompoundTag tag, HolderLookup.Provider registries) {
         resetVariables();
 
-        if (!mainTag.contains("TankConfig")) {
+        if (!tag.contains("Fluid")) {
             return;
         }
-
-        CompoundTag tag = mainTag.getCompound("TankConfig");
 
         getFluidTank().readFromNBT(registries, tag);
 
@@ -105,9 +103,7 @@ public class TankConfig {
 
     }
 
-    public void writeToNBT(CompoundTag mainTag, HolderLookup.Provider registries) {
-        CompoundTag tag = new CompoundTag();
-
+    public void writeToNBT(CompoundTag tag, HolderLookup.Provider registries) {
         if (isFluidLocked()) {
             Tag lockedFluidTag = getLockedFluid().save(registries);
 
@@ -116,8 +112,6 @@ public class TankConfig {
         tag.putInt("Capacity", getFluidCapacity());
 
         getFluidTank().writeToNBT(registries, tag);
-
-        mainTag.put("TankConfig", tag);
     }
 
 }

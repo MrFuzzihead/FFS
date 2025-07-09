@@ -39,6 +39,7 @@ public class FancyFluidStorage {
         FFSItems.register(bus);
         FFSBlockEntities.register(bus);
         FFSSounds.register(bus);
+        FFSDataComponentType.register(bus);
         NetworkHandler.init(bus);
 
         bus.register(FFSBlockRendererManager.class);

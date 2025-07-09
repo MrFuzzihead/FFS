@@ -105,33 +105,6 @@ public abstract class AbstractBlock extends Block implements EntityBlock {
         return ItemInteractionResult.CONSUME;
     }
 
-    // TODO: Do we stil need to handle non-items?
-    //    @Override
-//    public InteractionResult use(BlockState state, Level worldIn, BlockPos pos, Player player, InteractionHand handIn, BlockHitResult hit) {
-//        if (worldIn.isClientSide()) return InteractionResult.SUCCESS;
-//
-//        if (player.isShiftKeyDown()) return InteractionResult.PASS;
-//
-//        AbstractTankEntity tankEntity = (AbstractTankEntity) worldIn.getBlockEntity(pos);
-//        if (tankEntity == null) {
-//            return InteractionResult.PASS;
-//        }
-//
-//        if (tankEntity.isValid()) {
-//            if (GenericUtil.isFluidContainer(player.getMainHandItem())) {
-//                if (GenericUtil.fluidContainerHandler(worldIn, tankEntity.getMainValve(), player)) {
-//                    tankEntity.getMainValve().markForUpdateNow();
-//                    return InteractionResult.CONSUME;
-//                }
-//            }
-//
-//            NetworkHandler.sendPacketToPlayer(new FFSPacket.Client.OpenGUI(tankEntity, false), (ServerPlayer) player);
-//        } else if (tankEntity instanceof AbstractTankValve valve) {
-//            valve.buildTank(player, hit.getDirection().getOpposite());
-//        }
-//        return InteractionResult.CONSUME;
-//    }
-
     @Override
     public boolean hasAnalogOutputSignal(BlockState state) {
         return true;
@@ -145,10 +118,4 @@ public abstract class AbstractBlock extends Block implements EntityBlock {
         }
         return 0;
     }
-
-    // TODO: Does this still exist?
-//    @Override
-//    public boolean isValidSpawn(BlockState state, BlockGetter level, BlockPos pos, SpawnPlacements.Type type, EntityType<?> entityType) {
-//        return false;
-//    }
 }
