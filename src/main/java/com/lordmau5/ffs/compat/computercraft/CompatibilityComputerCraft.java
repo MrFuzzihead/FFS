@@ -1,8 +1,6 @@
 package com.lordmau5.ffs.compat.computercraft;
 
-import com.lordmau5.ffs.blockentity.tanktiles.BlockEntityTankComputer;
 import com.lordmau5.ffs.holder.FFSBlockEntities;
-import dan200.computercraft.api.peripheral.IPeripheral;
 import dan200.computercraft.api.peripheral.PeripheralCapability;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;

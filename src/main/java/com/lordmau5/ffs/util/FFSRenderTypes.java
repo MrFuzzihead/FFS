@@ -3,9 +3,7 @@ package com.lordmau5.ffs.util;
 import com.lordmau5.ffs.FancyFluidStorage;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.world.inventory.InventoryMenu;
 
 public class FFSRenderTypes extends RenderType {
 

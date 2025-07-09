@@ -1,14 +1,10 @@
 package com.lordmau5.ffs.blockentity.tanktiles;
 
 import com.lordmau5.ffs.blockentity.abstracts.AbstractTankEntity;
-import com.lordmau5.ffs.compat.Compatibility;
 import com.lordmau5.ffs.holder.FFSBlockEntities;
 import com.lordmau5.ffs.util.FFSStateProps;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.BlockState;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 public class BlockEntityTankComputer extends AbstractTankEntity {
 

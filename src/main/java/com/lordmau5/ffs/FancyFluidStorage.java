@@ -1,16 +1,13 @@
 package com.lordmau5.ffs;
 
-import com.lordmau5.ffs.blockentity.tanktiles.BlockEntityTankComputer;
 import com.lordmau5.ffs.blockentity.valves.BlockEntityFluidValve;
 import com.lordmau5.ffs.compat.Compatibility;
-import com.lordmau5.ffs.compat.computercraft.TankComputerPeripheral;
 import com.lordmau5.ffs.config.ServerConfig;
 import com.lordmau5.ffs.datagen.DataGenerators;
 import com.lordmau5.ffs.holder.*;
 import com.lordmau5.ffs.network.NetworkHandler;
 import com.lordmau5.ffs.util.Config;
 import com.lordmau5.ffs.util.GenericUtil;
-import dan200.computercraft.api.peripheral.PeripheralCapability;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
@@ -21,11 +18,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.ModLoadingContext;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
-import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.registries.RegisterEvent;

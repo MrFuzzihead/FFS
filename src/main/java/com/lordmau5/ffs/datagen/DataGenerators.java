@@ -3,7 +3,6 @@ package com.lordmau5.ffs.datagen;
 import com.lordmau5.ffs.FancyFluidStorage;
 import net.minecraft.data.DataGenerator;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.data.event.GatherDataEvent;
 
 public class DataGenerators {
