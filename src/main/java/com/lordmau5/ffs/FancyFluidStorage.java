@@ -1,6 +1,7 @@
 package com.lordmau5.ffs;
 
 import com.lordmau5.ffs.blockentity.valves.BlockEntityFluidValve;
+import com.lordmau5.ffs.client.OverlayRenderHandler;
 import com.lordmau5.ffs.compat.Compatibility;
 import com.lordmau5.ffs.config.ServerConfig;
 import com.lordmau5.ffs.datagen.DataGenerators;
@@ -23,6 +24,7 @@ import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
+import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.registries.RegisterEvent;
 
 @Mod(FancyFluidStorage.MOD_ID)
@@ -58,6 +60,8 @@ public class FancyFluidStorage {
 
     private void setupClient(final FMLClientSetupEvent event) {
         Compatibility.initClient();
+
+        NeoForge.EVENT_BUS.addListener(OverlayRenderHandler::renderWorld);
     }
 
     private void registerCreativeTab(RegisterEvent event) {

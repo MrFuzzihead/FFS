@@ -1,139 +1,204 @@
-//package com.lordmau5.ffs.client;
-//
-//import com.lordmau5.ffs.FancyFluidStorage;
-//import com.lordmau5.ffs.tile.abstracts.AbstractTankTile;
-//import com.lordmau5.ffs.tile.abstracts.AbstractTankValve;
-//import net.minecraft.client.Minecraft;
-//import net.minecraft.client.renderer.BlockRendererDispatcher;
-//import net.minecraft.client.renderer.BufferBuilder;
-//import net.minecraft.client.renderer.Tessellator;
-//import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-//import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
-//import net.minecraft.tileentity.TileEntity;
-//import net.minecraft.util.math.BlockPos;
-//import net.minecraft.world.World;
-//import net.minecraftforge.client.ForgeHooksClient;
-//import net.minecraftforge.client.event.RenderWorldLastEvent;
-//import org.lwjgl.opengl.GL11;
-//
-//import java.util.List;
-//
-////TODO rewrite all of this
-//@Deprecated
-//public class OverlayRenderHandler {
-//
-//    public static TextureAtlasSprite overlayTexture;
-//    private final Minecraft mc = Minecraft.getMinecraft();
-//    private double playerX;
-//    private double playerY;
-//    private double playerZ;
-//    private BlockPos lastPos;
-//    private int ticksRemaining;
-//    private BlockRenderLayer[] renderLayers = null;
-//
-//    @SubscribeEvent
-//    public void clientEndTick(TickEvent.ClientTickEvent event) {
-//        if ( event.phase != TickEvent.Phase.END ) {
-//            return;
-//        }
-//
-//        if ( ticksRemaining > 0 ) {
-//            ticksRemaining--;
-//        }
-//
-//        if ( mc.objectMouseOver != null ) {
-//            BlockPos pos = mc.objectMouseOver.getBlockPos();
-//            if ( pos != null && lastPos != null && !pos.equals(lastPos) ) {
-//                int maxTicks = 20 * 5;
-//                ticksRemaining = maxTicks;
-//            }
-//            lastPos = pos;
-//        }
-//    }
-//
-//    @SubscribeEvent
-//    public void onRenderWorldLast(RenderWorldLastEvent event) {
-//        if ( true ) {
-//            return;
-//        }
-//
-//        EntityPlayer player = Minecraft.getMinecraft().player;
-//        if ( lastPos == null ) {
-//            return;
-//        }
-//
-//        World world = player.getEntityWorld();
-//        if ( world == null ) {
-//            return;
-//        }
-//
-//        AbstractTankValve valve = null;
-//
-//        TileEntity tile = world.getTileEntity(lastPos);
-//        if ( tile != null && tile instanceof AbstractTankTile ) {
-//            valve = ((AbstractTankTile) tile).getMainValve();
-//        } else {
-//            if ( FancyFluidStorage.TANK_MANAGER.isPartOfTank(world, lastPos) ) {
-//                valve = FancyFluidStorage.TANK_MANAGER.getValveForBlock(world, lastPos);
-//            }
-//        }
-//
-//        if ( valve == null || !valve.isValid() ) {
-//            return;
-//        }
-//
-//        playerX = player.lastTickPosX + (player.posX - player.lastTickPosX) * (double) event.getPartialTicks();
-//        playerY = player.lastTickPosY + (player.posY - player.lastTickPosY) * (double) event.getPartialTicks();
-//        playerZ = player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * (double) event.getPartialTicks();
-//
-//        if ( renderLayers == null ) {
-//            renderLayers = BlockRenderLayer.values();
-//        }
-//
-//        drawAll(player.getPosition(), valve, world);
-//    }
-//
-//    private void drawAll(BlockPos playerPos, AbstractTankValve valve, World world) {
-//        GlStateManager.pushMatrix();
-//        GlStateManager.enableBlend();
-//        GlStateManager.enableCull();
-//        GlStateManager.doPolygonOffset(-3.0F, -3.0F);
-//        GlStateManager.enablePolygonOffset();
-//
-//        BlockPos valvePos = valve.getPos();
-//
-//        HashSet<BlockPos> tankBlocks = FancyFluidStorage.TANK_MANAGER.getFrameBlocksForValve(valve);
-//        tankBlocks.add(valvePos);
-//
-//        Tessellator tess = Tessellator.getInstance();
-//        BufferBuilder vb = tess.getBuffer();
-//        vb.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_TEX_COLOR);
-//        vb.setTranslation(-playerX, -playerY, -playerZ);
-//
-//        for (BlockPos pos : tankBlocks) {
-//            if ( playerPos.distanceSq(pos) > 20 )
-//                continue;
-//
-//            IBlockState state = world.getBlockState(pos);
-//            for (BlockRenderLayer layer : renderLayers) {
-//                if ( state.getBlock().canRenderInLayer(state, layer) ) {
-//                    ForgeHooksClient.setRenderLayer(layer);
-//
-//                    final BlockRendererDispatcher blockRendererDispatcher = Minecraft.getMinecraft().getBlockRendererDispatcher();
-//                    //TODO try to fix this
-////                    blockRendererDispatcher.renderBlockDamage(state, pos, overlayTexture, world);
-//                }
-//            }
-//        }
-//
-//        tess.draw();
-//        vb.setTranslation(0, 0, 0);
-//
-//        GlStateManager.doPolygonOffset(0.0F, 0.0F);
-//        GlStateManager.disablePolygonOffset();
-//        GlStateManager.disableCull();
-//        GlStateManager.disableBlend();
-//        GlStateManager.popMatrix();
-//    }
-//
-//}
+package com.lordmau5.ffs.client;
+
+import com.lordmau5.ffs.FancyFluidStorage;
+import com.lordmau5.ffs.blockentity.abstracts.AbstractTankEntity;
+import com.lordmau5.ffs.blockentity.abstracts.AbstractTankValve;
+import com.lordmau5.ffs.util.TankManager;
+import com.mojang.blaze3d.vertex.*;
+import net.minecraft.client.Camera;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.inventory.InventoryMenu;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import org.joml.Matrix4f;
+
+import java.util.HashSet;
+
+public class OverlayRenderHandler {
+    private static final Minecraft mc = Minecraft.getInstance();
+    private static BlockPos lastPos;
+    private static float ticksRemaining;
+
+    private static final ResourceLocation OVERLAY_TEXTURE_RESLOC = ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID, "block/overlay/tank_overlay_anim");
+    private static TextureAtlasSprite OVERLAY_TEXTURE;
+
+    private static final int MAX_TICKS = 20 * 5;
+
+    private static void updateLastPos(float deltaTick) {
+        if (ticksRemaining > 0 ) {
+            ticksRemaining -= deltaTick;
+        }
+
+        HitResult hit = mc.hitResult;
+        if (hit == null || hit.getType() != HitResult.Type.BLOCK) return;
+
+        BlockHitResult blockHit = (BlockHitResult) hit;
+        BlockPos pos = blockHit.getBlockPos();
+
+        if ( lastPos != null && !pos.equals(lastPos) ) {
+            ticksRemaining = MAX_TICKS;
+        }
+        lastPos = pos;
+    }
+
+    private static TextureAtlasSprite getOverlayTexture() {
+        if (OVERLAY_TEXTURE == null) {
+            OVERLAY_TEXTURE = mc.getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(OVERLAY_TEXTURE_RESLOC);
+        }
+
+        return OVERLAY_TEXTURE;
+    }
+
+    public static void renderWorld(RenderLevelStageEvent event) {
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
+
+        Level level = mc.level;
+        if (level == null) return;
+
+        updateLastPos(event.getPartialTick().getGameTimeDeltaTicks());
+        if (lastPos == null || ticksRemaining <= 0) return;
+
+        AbstractTankValve valve = null;
+
+        BlockEntity tile = level.getBlockEntity(lastPos);
+        if (tile instanceof AbstractTankEntity) {
+            valve = ((AbstractTankEntity) tile).getMainValve();
+        } else {
+            if ( TankManager.INSTANCE.isPartOfTank(level, lastPos)) {
+                valve = TankManager.INSTANCE.getValveForBlock(level, lastPos);
+            }
+        }
+
+        if (valve == null || !valve.isValid()) return;
+
+        HashSet<BlockPos> tankBlocks = TankManager.INSTANCE.getAllFrameBlocksForValve(valve);
+        tankBlocks.add(valve.getBlockPos());
+
+        PoseStack poseStack = event.getPoseStack();
+        MultiBufferSource.BufferSource bufferSource = mc.renderBuffers().bufferSource();
+
+        TextureAtlasSprite sprite = getOverlayTexture();
+        if (sprite == null) return;
+
+        Camera camera = mc.gameRenderer.getMainCamera();
+        Vec3 camPos = camera.getPosition();
+
+        poseStack.pushPose();
+        poseStack.translate(-camPos.x, -camPos.y, -camPos.z);
+
+        for (BlockPos targetPos : tankBlocks) {
+            for (Direction face : Direction.values()) {
+                if (!level.isEmptyBlock(targetPos.relative(face))) continue;
+
+                renderBlockOverlay(level, targetPos, poseStack, bufferSource, sprite);
+            }
+        }
+
+        poseStack.popPose();
+        bufferSource.endBatch();
+    }
+
+    private static void renderBlockOverlay(Level level, BlockPos pos, PoseStack poseStack,
+                                           MultiBufferSource bufferSource, TextureAtlasSprite sprite) {
+        poseStack.pushPose();
+        poseStack.translate(pos.getX(), pos.getY(), pos.getZ());
+        Matrix4f matrix = poseStack.last().pose();
+
+        VertexConsumer builder = bufferSource.getBuffer(RenderType.translucent());
+
+        BlockState state = level.getBlockState(pos);
+
+        for (Direction dir : Direction.values()) {
+            BlockPos neighborPos = pos.relative(dir);
+
+            if (!Block.shouldRenderFace(state, level, pos, dir, neighborPos)) continue;
+
+            renderFace(matrix, builder, dir, sprite);
+        }
+
+        poseStack.popPose();
+    }
+
+    private static void renderFace(Matrix4f matrix, VertexConsumer builder, Direction face,
+                                   TextureAtlasSprite sprite) {
+        float uMin = sprite.getU0();
+        float uMax = sprite.getU1();
+        float vMin = sprite.getV0();
+        float vMax = sprite.getV1();
+
+        float offset = 0.002f; // Z-fighting offset
+        float dx = face.getStepX() * offset;
+        float dy = face.getStepY() * offset;
+        float dz = face.getStepZ() * offset;
+
+        switch (face) {
+            case UP -> {
+                // Top face (y=1) — counter-clockwise when looking down from above
+                applyToVertex(builder.addVertex(matrix, 0 + dx, 1 + dy, 1 + dz).setUv(uMin, vMin), face);
+                applyToVertex(builder.addVertex(matrix, 1 + dx, 1 + dy, 1 + dz).setUv(uMax, vMin), face);
+                applyToVertex(builder.addVertex(matrix, 1 + dx, 1 + dy, 0 + dz).setUv(uMax, vMax), face);
+                applyToVertex(builder.addVertex(matrix, 0 + dx, 1 + dy, 0 + dz).setUv(uMin, vMax), face);
+            }
+            case DOWN -> {
+                // Bottom face (y=0) — counter-clockwise when looking up from below
+                applyToVertex(builder.addVertex(matrix, 0 + dx, 0 + dy, 0 + dz).setUv(uMin, vMax), face);
+                applyToVertex(builder.addVertex(matrix, 1 + dx, 0 + dy, 0 + dz).setUv(uMax, vMax), face);
+                applyToVertex(builder.addVertex(matrix, 1 + dx, 0 + dy, 1 + dz).setUv(uMax, vMin), face);
+                applyToVertex(builder.addVertex(matrix, 0 + dx, 0 + dy, 1 + dz).setUv(uMin, vMin), face);
+            }
+            case NORTH -> {
+                // North face (z=0)
+                applyToVertex(builder.addVertex(matrix, 1 + dx, 0 + dy, 0 + dz).setUv(uMin, vMax), face);
+                applyToVertex(builder.addVertex(matrix, 0 + dx, 0 + dy, 0 + dz).setUv(uMax, vMax), face);
+                applyToVertex(builder.addVertex(matrix, 0 + dx, 1 + dy, 0 + dz).setUv(uMax, vMin), face);
+                applyToVertex(builder.addVertex(matrix, 1 + dx, 1 + dy, 0 + dz).setUv(uMin, vMin), face);
+            }
+            case SOUTH -> {
+                // South face (z=1)
+                applyToVertex(builder.addVertex(matrix, 0 + dx, 0 + dy, 1 + dz).setUv(uMin, vMax), face);
+                applyToVertex(builder.addVertex(matrix, 1 + dx, 0 + dy, 1 + dz).setUv(uMax, vMax), face);
+                applyToVertex(builder.addVertex(matrix, 1 + dx, 1 + dy, 1 + dz).setUv(uMax, vMin), face);
+                applyToVertex(builder.addVertex(matrix, 0 + dx, 1 + dy, 1 + dz).setUv(uMin, vMin), face);
+            }
+            case WEST -> {
+                // West face (x=0)
+                applyToVertex(builder.addVertex(matrix, 0 + dx, 0 + dy, 0 + dz).setUv(uMin, vMax), face);
+                applyToVertex(builder.addVertex(matrix, 0 + dx, 0 + dy, 1 + dz).setUv(uMax, vMax), face);
+                applyToVertex(builder.addVertex(matrix, 0 + dx, 1 + dy, 1 + dz).setUv(uMax, vMin), face);
+                applyToVertex(builder.addVertex(matrix, 0 + dx, 1 + dy, 0 + dz).setUv(uMin, vMin), face);
+            }
+            case EAST -> {
+                // East face (x=1)
+                applyToVertex(builder.addVertex(matrix, 1 + dx, 0 + dy, 1 + dz).setUv(uMin, vMax), face);
+                applyToVertex(builder.addVertex(matrix, 1 + dx, 0 + dy, 0 + dz).setUv(uMax, vMax), face);
+                applyToVertex(builder.addVertex(matrix, 1 + dx, 1 + dy, 0 + dz).setUv(uMax, vMin), face);
+                applyToVertex(builder.addVertex(matrix, 1 + dx, 1 + dy, 1 + dz).setUv(uMin, vMin), face);
+            }
+        }
+    }
+
+    private static void applyToVertex(VertexConsumer consumer, Direction face) {
+        int light = LightTexture.FULL_BRIGHT;
+        float alpha = ticksRemaining / MAX_TICKS * 0.5f;
+
+        int normalX = face.getStepX();
+        int normalY = face.getStepY();
+        int normalZ = face.getStepZ();
+
+        consumer.setColor(0.0f, 0.8f, 1f, alpha).setLight(light).setNormal(normalX, normalY, normalZ);
+    }
+
+}
