@@ -3,17 +3,18 @@ package com.lordmau5.ffs.client.gui;
 import com.lordmau5.ffs.FancyFluidStorage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.ImageButton;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.resources.ResourceLocation;
 
-public class GuiButtonLockFluid extends ImageButton {
-    private static final ResourceLocation toggleTexture = ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID, "textures/gui/gui_tank_no_valve.png");
+public class GuiButtonLockFluid extends Button {
+    private static final ResourceLocation TEXTURE_FLUID_LOCKED = ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID, "textures/gui/valve/fluid_locked.png");
+    private static final ResourceLocation TEXTURE_FLUID_UNLOCKED = ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID, "textures/gui/valve/fluid_unlocked.png");
+
     private boolean state;
 
-    GuiButtonLockFluid(int x, int y, boolean state, OnPress onPress) {
-//        super(x, y, 8, 8, 0, 128, 0, null, onPress);
-        //TODO
-        super(x, y, 8, 8, null, onPress);
+    public GuiButtonLockFluid(int x, int y, boolean state, Button.OnPress onPress) {
+        super(x, y, 7, 8, CommonComponents.EMPTY, onPress, DEFAULT_NARRATION);
         this.state = state;
     }
 
@@ -29,15 +30,12 @@ public class GuiButtonLockFluid extends ImageButton {
         this.state = !this.state;
     }
 
-
     @Override
-    public void renderWidget(GuiGraphics guiGraphics, int pMouseX, int pMouseY, float pPartialTick)
-    {
+    public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         RenderSystem.disableDepthTest();
 
-        int texStart = getState() ? 0 : 8;
-
-        guiGraphics.blit(toggleTexture, this.getX(), this.getY(), texStart, 128, this.width, this.height, 256, 256);
+        ResourceLocation resourcelocation = this.getState() ? TEXTURE_FLUID_LOCKED : TEXTURE_FLUID_UNLOCKED;
+        guiGraphics.blit(resourcelocation, this.getX(), this.getY(), 0, 0, this.width, this.height, this.width, this.height);
 
         RenderSystem.enableDepthTest();
     }

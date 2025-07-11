@@ -36,8 +36,8 @@ import java.util.Objects;
 import java.util.Optional;
 
 public class GuiValve extends Screen {
-    private static final ResourceLocation tex_valve = ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID,"textures/gui/gui_tank_valve.png");
-    private static final ResourceLocation tex_no_valve = ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID,"textures/gui/gui_tank_no_valve.png");
+    private static final ResourceLocation TEXTURE_VALVE = ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID,"textures/gui/valve/valve.png");
+    private static final ResourceLocation TEXTURE_MAIN_VALVE = ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID,"textures/gui/valve/main_valve.png");
     private final @Nullable AbstractTankValve valve;
     private final @Nullable AbstractTankValve mainValve;
     private final int xSize_Valve = 196;
@@ -78,7 +78,7 @@ public class GuiValve extends Screen {
 //            this.tileName.setMaxStringLength(32);
         }
         if (this.mainValve != null) {
-            this.addRenderableWidget(this.lockFluidButton = new GuiButtonLockFluid(this.left + 62, this.top + 26, this.mainValve.getTankConfig().isFluidLocked(), (button) -> {
+            this.addRenderableWidget(this.lockFluidButton = new GuiButtonLockFluid(this.left + 63, this.top + 18, this.mainValve.getTankConfig().isFluidLocked(), (button) -> {
                 this.lockFluidButton.toggleState();
 
                 this.mainValve.setFluidLock(this.lockFluidButton.getState());
@@ -97,7 +97,7 @@ public class GuiValve extends Screen {
             this.left = (this.width - this.xSize_NoValve) / 2;
             this.top = (this.height - this.ySize_NoValve) / 2;
             if (this.mainValve != null) {
-                this.addRenderableWidget(this.lockFluidButton = new GuiButtonLockFluid(this.left + 65, this.top + 26, this.mainValve.getTankConfig().isFluidLocked(), (button) -> {
+                this.addRenderableWidget(this.lockFluidButton = new GuiButtonLockFluid(this.left + 85, this.top + 116, this.mainValve.getTankConfig().isFluidLocked(), (button) -> {
                     this.lockFluidButton.toggleState();
 
                     this.mainValve.setFluidLock(this.lockFluidButton.getState());
@@ -155,7 +155,7 @@ public class GuiValve extends Screen {
     }
 
     private void drawGUINoValve(GuiGraphics guiGraphics) {
-        guiGraphics.blit(tex_no_valve, this.left, this.top, 0, 0, this.xSize_NoValve, this.ySize_NoValve);
+        guiGraphics.blit(TEXTURE_VALVE, this.left, this.top, 0, 0, this.xSize_NoValve, this.ySize_NoValve);
 
         if (this.valve == null) {
             return;
@@ -183,7 +183,13 @@ public class GuiValve extends Screen {
         Component fluid = stack.getHoverName();
         guiGraphics.drawCenteredString(this.font, fluid, this.left + (this.xSize_NoValve / 2), this.top + 6, 16777215);
 
-        if (this.mouseX >= this.left + 66 && this.mouseX < this.left + 66 + 8 && this.mouseY >= this.top + 26 && this.mouseY < this.top + 26 + 8) {
+//        if (this.mouseX >= this.left + 66 && this.mouseX < this.left + 66 + 8 && this.mouseY >= this.top + 26 && this.mouseY < this.top + 26 + 8) {
+        if (
+                this.mouseX >= this.lockFluidButton.getX() &&
+                        this.mouseX < this.lockFluidButton.getRight() &&
+                        this.mouseY >= this.lockFluidButton.getY() &&
+                        this.mouseY < this.lockFluidButton.getBottom()
+        ) {
             lockedFluidHoveringText(guiGraphics);
         } else {
             fluidHoveringText(guiGraphics, fluid, 24, 27, 89);
