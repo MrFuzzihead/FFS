@@ -346,32 +346,6 @@ public class TankManager {
         }
     }
 
-    // TODO: FillBucketEvent
-//    @SubscribeEvent
-//    public void onFillBucket(FillBucketEvent event) {
-//        if (event.getEntity().isShiftKeyDown()) {
-//            return;
-//        }
-//
-//        if (event.getTarget() == null) {
-//            return;
-//        }
-//
-//        if (event.getTarget().getType() != HitResult.Type.BLOCK) {
-//            return;
-//        }
-//
-//        BlockHitResult rayTraceResult = (BlockHitResult) event.getTarget();
-//
-//        BlockPos pos = rayTraceResult.getBlockPos();
-//
-//        if (!isPartOfTank(event.getLevel(), pos)) {
-//            return;
-//        }
-//
-//        event.setCanceled(true);
-//    }
-
     @SubscribeEvent
     public void onDimensionChange(PlayerEvent.PlayerChangedDimensionEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer)) {
