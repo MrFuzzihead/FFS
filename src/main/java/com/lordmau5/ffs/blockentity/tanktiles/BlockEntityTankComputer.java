@@ -8,9 +8,6 @@ import net.minecraft.world.level.block.state.BlockState;
 
 public class BlockEntityTankComputer extends AbstractTankEntity {
 
-    //TODO caps
-//    private LazyOptional<?> peripheralCap;
-
     public BlockEntityTankComputer(BlockPos pos, BlockState state) {
         super(FFSBlockEntities.tankComputer.get(), pos, state);
     }
@@ -25,25 +22,4 @@ public class BlockEntityTankComputer extends AbstractTankEntity {
                 .setValue(FFSStateProps.TILE_VALID, isValid())
         );
     }
-
-    //TODO capabillities
-//    @Override
-//    public @NotNull <T> LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
-//        if (Compatibility.isCCLoaded && cap == CompatibilityComputerCraft.CAPABILITY_PERIPHERAL) {
-//            if (peripheralCap == null) {
-//                peripheralCap = LazyOptional.of(() -> CompatibilityComputerCraft.getPeripheral(this));
-//            }
-//
-//            return peripheralCap.cast();
-//        }
-//
-//        return super.getCapability(cap, side);
-//    }
-//
-//    @Override
-//    public void invalidateCaps() {
-//        super.invalidateCaps();
-//
-//        if (peripheralCap != null) peripheralCap.invalidate();
-//    }
 }
