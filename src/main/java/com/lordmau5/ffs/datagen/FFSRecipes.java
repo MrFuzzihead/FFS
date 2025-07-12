@@ -19,8 +19,7 @@ import java.util.concurrent.CompletableFuture;
 
 public class FFSRecipes extends RecipeProvider {
 
-    public FFSRecipes(DataGenerator generatorIn, CompletableFuture<HolderLookup.Provider> lookupProvider)
-    {
+    public FFSRecipes(DataGenerator generatorIn, CompletableFuture<HolderLookup.Provider> lookupProvider) {
         super(generatorIn.getPackOutput(), lookupProvider);
     }
 
@@ -29,8 +28,7 @@ public class FFSRecipes extends RecipeProvider {
     }
 
     @Override
-    protected void buildRecipes(RecipeOutput consumer)
-    {
+    protected void buildRecipes(RecipeOutput consumer) {
         ShapedRecipeBuilder.shaped(RecipeCategory.MISC, FFSBlocks.fluidValve.get())
                 .pattern("igi")
                 .pattern("gbg")
@@ -44,10 +42,10 @@ public class FFSRecipes extends RecipeProvider {
 
         var cc_computer = BuiltInRegistries.ITEM.getHolder(ResourceLocation.fromNamespaceAndPath("computercraft", "computer_normal"));
         cc_computer.ifPresent(itemHolder -> whenModLoaded(consumer, "computercraft", ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, FFSBlocks.tankComputer.get())
-                        .requires(FFSBlocks.fluidValve.get())
-                        .requires(itemHolder.value())
-                        .group(FancyFluidStorage.MOD_ID)
-                        .unlockedBy("has_item", InventoryChangeTrigger.TriggerInstance.hasItems(FFSBlocks.fluidValve.get(), itemHolder.value()))
+                .requires(FFSBlocks.fluidValve.get())
+                .requires(itemHolder.value())
+                .group(FancyFluidStorage.MOD_ID)
+                .unlockedBy("has_item", InventoryChangeTrigger.TriggerInstance.hasItems(FFSBlocks.fluidValve.get(), itemHolder.value()))
         ));
 
         ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, FFSItems.titEgg.get())

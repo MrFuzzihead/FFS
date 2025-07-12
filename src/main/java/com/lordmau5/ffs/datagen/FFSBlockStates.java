@@ -10,8 +10,7 @@ import net.neoforged.neoforge.client.model.generators.BlockStateProvider;
 import net.neoforged.neoforge.client.model.generators.MultiPartBlockStateBuilder;
 import net.neoforged.neoforge.common.data.ExistingFileHelper;
 
-public class FFSBlockStates extends BlockStateProvider
-{
+public class FFSBlockStates extends BlockStateProvider {
 
     public FFSBlockStates(DataGenerator gen, ExistingFileHelper helper) {
         super(gen.getPackOutput(), FancyFluidStorage.MOD_ID, helper);

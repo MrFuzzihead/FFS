@@ -4,7 +4,8 @@ import com.lordmau5.ffs.FancyFluidStorage;
 import com.lordmau5.ffs.blockentity.abstracts.AbstractTankEntity;
 import com.lordmau5.ffs.blockentity.abstracts.AbstractTankValve;
 import com.lordmau5.ffs.util.TankManager;
-import com.mojang.blaze3d.vertex.*;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LightTexture;
@@ -29,16 +30,14 @@ import java.util.HashSet;
 
 public class OverlayRenderHandler {
     private static final Minecraft mc = Minecraft.getInstance();
+    private static final ResourceLocation OVERLAY_TEXTURE_RESLOC = ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID, "block/overlay/tank_overlay_anim");
+    private static final int MAX_TICKS = 20 * 5;
     private static BlockPos lastPos;
     private static float ticksRemaining;
-
-    private static final ResourceLocation OVERLAY_TEXTURE_RESLOC = ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID, "block/overlay/tank_overlay_anim");
     private static TextureAtlasSprite OVERLAY_TEXTURE;
 
-    private static final int MAX_TICKS = 20 * 5;
-
     private static void updateLastPos(float deltaTick) {
-        if (ticksRemaining > 0 ) {
+        if (ticksRemaining > 0) {
             ticksRemaining -= deltaTick;
         }
 
@@ -48,7 +47,7 @@ public class OverlayRenderHandler {
         BlockHitResult blockHit = (BlockHitResult) hit;
         BlockPos pos = blockHit.getBlockPos();
 
-        if ( lastPos != null && !pos.equals(lastPos) ) {
+        if (lastPos != null && !pos.equals(lastPos)) {
             ticksRemaining = MAX_TICKS;
         }
         lastPos = pos;
@@ -77,7 +76,7 @@ public class OverlayRenderHandler {
         if (tile instanceof AbstractTankEntity) {
             valve = ((AbstractTankEntity) tile).getMainValve();
         } else {
-            if ( TankManager.INSTANCE.isPartOfTank(level, lastPos)) {
+            if (TankManager.INSTANCE.isPartOfTank(level, lastPos)) {
                 valve = TankManager.INSTANCE.getValveForBlock(level, lastPos);
             }
         }

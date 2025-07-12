@@ -23,10 +23,9 @@ import java.util.TreeMap;
 public abstract class FFSPacket {
     public static abstract class Client {
         public static class OpenGUI implements CustomPacketPayload {
+            public static final Type<OpenGUI> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID, "open_gui"));
             public BlockPos pos;
             public boolean isValve;
-
-            public static final Type<OpenGUI> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID, "open_gui"));
 
 
             public OpenGUI() {
@@ -35,11 +34,6 @@ public abstract class FFSPacket {
             public OpenGUI(AbstractTankEntity tile, boolean isValve) {
                 this.pos = tile.getBlockPos();
                 this.isValve = isValve;
-            }
-
-            public void write(FriendlyByteBuf buffer) {
-                buffer.writeBlockPos(this.pos);
-                buffer.writeBoolean(this.isValve);
             }
 
             public static OpenGUI decode(FriendlyByteBuf buffer) {
@@ -51,12 +45,22 @@ public abstract class FFSPacket {
                 return packet;
             }
 
+            public void write(FriendlyByteBuf buffer) {
+                buffer.writeBlockPos(this.pos);
+                buffer.writeBoolean(this.isValve);
+            }
+
             public BlockPos getValvePos() {
                 return pos;
             }
 
             public boolean getIsValve() {
                 return isValve;
+            }
+
+            @Override
+            public Type<? extends CustomPacketPayload> type() {
+                return TYPE;
             }
 
             public static class Handler implements IPayloadHandler<OpenGUI> {
@@ -67,19 +71,13 @@ public abstract class FFSPacket {
                     });
                 }
             }
-
-            @Override
-            public Type<? extends CustomPacketPayload> type()
-            {
-                return TYPE;
-            }
         }
 
         public static class OnTankBuild implements CustomPacketPayload {
+            public static final Type<OnTankBuild> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID, "on_tank_build"));
             private BlockPos valvePos;
             private TreeMap<Integer, HashSet<BlockPos>> airBlocks;
             private TreeMap<Integer, HashSet<BlockPos>> frameBlocks;
-            public static final Type<OnTankBuild> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID, "on_tank_build"));
 
             public OnTankBuild() {
             }
@@ -88,26 +86,6 @@ public abstract class FFSPacket {
                 this.valvePos = valve.getBlockPos();
                 this.airBlocks = valve.getAirBlocks();
                 this.frameBlocks = valve.getFrameBlocks();
-            }
-
-            public void write(FriendlyByteBuf buffer) {
-                buffer.writeLong(this.valvePos.asLong());
-
-                buffer.writeInt(this.airBlocks.size());
-                for (int layer : this.airBlocks.keySet()) {
-                    buffer.writeInt(layer);
-
-                    var layerAirBlocks = this.airBlocks.get(layer);
-                    buffer.writeCollection(layerAirBlocks, (buf, pos) -> buf.writeBlockPos(pos));
-                }
-
-                buffer.writeInt(this.frameBlocks.size());
-                for (int layer : this.frameBlocks.keySet()) {
-                    buffer.writeInt(layer);
-
-                    var layerFrameBlocks = this.frameBlocks.get(layer);
-                    buffer.writeCollection(layerFrameBlocks, (buf, pos) -> buf.writeBlockPos(pos));
-                }
             }
 
             public static OnTankBuild decode(FriendlyByteBuf buffer) {
@@ -138,6 +116,26 @@ public abstract class FFSPacket {
                 return packet;
             }
 
+            public void write(FriendlyByteBuf buffer) {
+                buffer.writeLong(this.valvePos.asLong());
+
+                buffer.writeInt(this.airBlocks.size());
+                for (int layer : this.airBlocks.keySet()) {
+                    buffer.writeInt(layer);
+
+                    var layerAirBlocks = this.airBlocks.get(layer);
+                    buffer.writeCollection(layerAirBlocks, (buf, pos) -> buf.writeBlockPos(pos));
+                }
+
+                buffer.writeInt(this.frameBlocks.size());
+                for (int layer : this.frameBlocks.keySet()) {
+                    buffer.writeInt(layer);
+
+                    var layerFrameBlocks = this.frameBlocks.get(layer);
+                    buffer.writeCollection(layerFrameBlocks, (buf, pos) -> buf.writeBlockPos(pos));
+                }
+            }
+
             public BlockPos getValvePos() {
                 return valvePos;
             }
@@ -150,6 +148,11 @@ public abstract class FFSPacket {
                 return frameBlocks;
             }
 
+            @Override
+            public Type<? extends CustomPacketPayload> type() {
+                return TYPE;
+            }
+
             public static class Handler implements IPayloadHandler<OnTankBuild> {
                 @Override
                 public void handle(OnTankBuild payload, IPayloadContext context) {
@@ -158,28 +161,17 @@ public abstract class FFSPacket {
                     });
                 }
             }
-
-            @Override
-            public Type<? extends CustomPacketPayload> type()
-            {
-                return TYPE;
-            }
         }
 
         public static class OnTankBreak implements CustomPacketPayload {
-            private BlockPos valvePos;
             public static final Type<OnTankBreak> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID, "on_tank_break"));
+            private BlockPos valvePos;
 
             public OnTankBreak() {
             }
 
             public OnTankBreak(AbstractTankValve valve) {
                 this.valvePos = valve.getBlockPos();
-            }
-
-
-            public void write(FriendlyByteBuf buffer) {
-                buffer.writeBlockPos(this.valvePos);
             }
 
             public static OnTankBreak decode(FriendlyByteBuf buffer) {
@@ -190,8 +182,17 @@ public abstract class FFSPacket {
                 return packet;
             }
 
+            public void write(FriendlyByteBuf buffer) {
+                buffer.writeBlockPos(this.valvePos);
+            }
+
             public BlockPos getValvePos() {
                 return valvePos;
+            }
+
+            @Override
+            public Type<? extends CustomPacketPayload> type() {
+                return TYPE;
             }
 
             public static class Handler implements IPayloadHandler<OnTankBreak> {
@@ -202,12 +203,6 @@ public abstract class FFSPacket {
                     });
                 }
             }
-
-            @Override
-            public Type<? extends CustomPacketPayload> type()
-            {
-                return TYPE;
-            }
         }
 
         public static class ClearTanks implements CustomPacketPayload {
@@ -216,12 +211,16 @@ public abstract class FFSPacket {
             public ClearTanks() {
             }
 
+            public static ClearTanks decode(FriendlyByteBuf buffer) {
+                return new ClearTanks();
+            }
 
             public void write(FriendlyByteBuf buffer) {
             }
 
-            public static ClearTanks decode(FriendlyByteBuf buffer) {
-                return new ClearTanks();
+            @Override
+            public Type<? extends CustomPacketPayload> type() {
+                return TYPE;
             }
 
             public static class Handler implements IPayloadHandler<ClearTanks> {
@@ -232,21 +231,14 @@ public abstract class FFSPacket {
                     });
                 }
             }
-
-            @Override
-            public Type<? extends CustomPacketPayload> type()
-            {
-                return TYPE;
-            }
         }
     }
 
     public static class Server {
         public static class UpdateTileName implements CustomPacketPayload {
+            public static final Type<UpdateTileName> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID, "update_tile_name"));
             private BlockPos pos;
             private String name;
-
-            public static final Type<UpdateTileName> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID, "update_tile_name"));
 
             public UpdateTileName() {
             }
@@ -254,11 +246,6 @@ public abstract class FFSPacket {
             public UpdateTileName(AbstractTankEntity tankTile, String name) {
                 this.pos = tankTile.getBlockPos();
                 this.name = name;
-            }
-
-            public void write(FriendlyByteBuf buffer) {
-                buffer.writeBlockPos(this.pos);
-                buffer.writeUtf(this.name);
             }
 
             public static UpdateTileName decode(FriendlyByteBuf buffer) {
@@ -270,12 +257,22 @@ public abstract class FFSPacket {
                 return packet;
             }
 
+            public void write(FriendlyByteBuf buffer) {
+                buffer.writeBlockPos(this.pos);
+                buffer.writeUtf(this.name);
+            }
+
             public BlockPos getPos() {
                 return pos;
             }
 
             public String getName() {
                 return name;
+            }
+
+            @Override
+            public Type<? extends CustomPacketPayload> type() {
+                return TYPE;
             }
 
             public static class Handler implements IPayloadHandler<UpdateTileName> {
@@ -293,20 +290,12 @@ public abstract class FFSPacket {
                     });
                 }
             }
-
-            @Override
-            public Type<? extends CustomPacketPayload> type()
-            {
-                return TYPE;
-            }
         }
 
-        public static class UpdateFluidLock implements CustomPacketPayload
-        {
+        public static class UpdateFluidLock implements CustomPacketPayload {
+            public static final Type<UpdateFluidLock> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID, "update_fluid_lock"));
             private BlockPos pos;
             private boolean fluidLock;
-
-            public static final Type<UpdateFluidLock> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID, "update_fluid_lock"));
 
             public UpdateFluidLock() {
             }
@@ -315,14 +304,6 @@ public abstract class FFSPacket {
                 this.pos = valve.getBlockPos();
                 this.fluidLock = valve.getTankConfig().isFluidLocked();
             }
-
-
-            public void write(FriendlyByteBuf buffer)
-            {
-                buffer.writeBlockPos(this.pos);
-                buffer.writeBoolean(this.fluidLock);
-            }
-
 
             public static UpdateFluidLock decode(FriendlyByteBuf buffer) {
                 UpdateFluidLock packet = new UpdateFluidLock();
@@ -333,12 +314,22 @@ public abstract class FFSPacket {
                 return packet;
             }
 
+            public void write(FriendlyByteBuf buffer) {
+                buffer.writeBlockPos(this.pos);
+                buffer.writeBoolean(this.fluidLock);
+            }
+
             public BlockPos getPos() {
                 return pos;
             }
 
             public boolean isFluidLock() {
                 return fluidLock;
+            }
+
+            @Override
+            public Type<? extends CustomPacketPayload> type() {
+                return TYPE;
             }
 
             public static class Handler implements IPayloadHandler<UpdateFluidLock> {
@@ -355,27 +346,17 @@ public abstract class FFSPacket {
                     });
                 }
             }
-
-            @Override
-            public Type<? extends CustomPacketPayload> type()
-            {
-                return TYPE;
-            }
         }
 
         public static class OnTankRequest implements CustomPacketPayload {
-            private BlockPos pos;
             public static final Type<OnTankRequest> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID, "on_tank_request"));
+            private BlockPos pos;
 
             public OnTankRequest() {
             }
 
             public OnTankRequest(AbstractTankValve valve) {
                 this.pos = valve.getBlockPos();
-            }
-
-            public void write(FriendlyByteBuf buffer) {
-                buffer.writeBlockPos(this.pos);
             }
 
             public static OnTankRequest decode(FriendlyByteBuf buffer) {
@@ -386,8 +367,17 @@ public abstract class FFSPacket {
                 return packet;
             }
 
+            public void write(FriendlyByteBuf buffer) {
+                buffer.writeBlockPos(this.pos);
+            }
+
             public BlockPos getPos() {
                 return pos;
+            }
+
+            @Override
+            public Type<? extends CustomPacketPayload> type() {
+                return TYPE;
             }
 
             public static class Handler implements IPayloadHandler<OnTankRequest> {
@@ -403,12 +393,6 @@ public abstract class FFSPacket {
                         }
                     });
                 }
-            }
-
-            @Override
-            public Type<? extends CustomPacketPayload> type()
-            {
-                return TYPE;
             }
         }
     }

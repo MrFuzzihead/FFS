@@ -24,12 +24,12 @@ import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.client.extensions.IBlockEntityRendererExtension;
 import net.neoforged.neoforge.fluids.FluidStack;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-public abstract class AbstractTankValve extends AbstractTankEntity implements IFacingEntity, INameableEntity, IBlockEntityRendererExtension<AbstractTankValve>
-{
+public abstract class AbstractTankValve extends AbstractTankEntity implements IFacingEntity, INameableEntity, IBlockEntityRendererExtension<AbstractTankValve> {
 
     public final HashMap<Integer, TreeMap<Integer, HashSet<BlockPos>>> maps;
     private final HashSet<AbstractTankEntity> tankTiles;
@@ -55,13 +55,6 @@ public abstract class AbstractTankValve extends AbstractTankEntity implements IF
 
         setValid(false);
         setValvePos(null);
-    }
-
-    @Override
-    public void clearRemoved() {
-        super.clearRemoved();
-        initiated = true;
-        initialWaitTick = 20;
     }
 
     public static <T extends BlockEntity> void tick(Level level, BlockPos pos, BlockState state, T be) {
@@ -94,6 +87,13 @@ public abstract class AbstractTankValve extends AbstractTankEntity implements IF
             valve.setValid(false);
             valve.updateBlockAndNeighbors();
         }
+    }
+
+    @Override
+    public void clearRemoved() {
+        super.clearRemoved();
+        initiated = true;
+        initialWaitTick = 20;
     }
 
     public TreeMap<Integer, HashSet<BlockPos>> getFrameBlocks() {
@@ -160,7 +160,7 @@ public abstract class AbstractTankValve extends AbstractTankEntity implements IF
      * @param inside - The direction of the inside of the tank
      */
     public void buildTank(Player player, Direction inside) {
-        if (getLevel().isClientSide()) {
+        if (getLevel() == null || getLevel().isClientSide()) {
             return;
         }
 
@@ -174,14 +174,17 @@ public abstract class AbstractTankValve extends AbstractTankEntity implements IF
      * @param inside - The direction of the inside of the tank
      */
     private void buildTank(Direction inside) {
-        /**
+        if (getLevel() == null) {
+            return;
+        }
+        /*
          * Don't build if it's on the client!
          */
         if (getLevel().isClientSide()) {
             return;
         }
 
-        /**
+        /*
          * Let's first set the tank to be invalid,
          * since it should stay like that if the building fails.
          * Also, let's reset variables.
@@ -192,21 +195,21 @@ public abstract class AbstractTankValve extends AbstractTankEntity implements IF
 
         tankTiles.clear();
 
-        /**
+        /*
          * Now, set the inside direction according to the variable.
          */
         if (inside != null) {
             setTileFacing(inside);
         }
 
-        /**
+        /*
          * Actually setup the tank here
          */
         if (!setupTank()) {
             return;
         }
 
-        /**
+        /*
          * Just in case, set *initiated* to false again.
          * Also, update our neighbor blocks, e.g. pipes or similar.
          */
@@ -216,6 +219,8 @@ public abstract class AbstractTankValve extends AbstractTankEntity implements IF
     }
 
     private void setTankTileFacing(TreeMap<Integer, HashSet<BlockPos>> airBlocks, BlockEntity tankTile) {
+        if (getLevel() == null) return;
+
         HashSet<BlockPos> possibleAirBlocks = new HashSet<>();
         for (Direction dr : Direction.values()) {
             if (GenericUtil.isAirOrWaterLoggable(getLevel(), tankTile.getBlockPos().relative(dr))) {
@@ -247,6 +252,8 @@ public abstract class AbstractTankValve extends AbstractTankEntity implements IF
     }
 
     private boolean checkBlock(BlockPos pos) {
+        if (getLevel() == null) return false;
+
         if (GenericUtil.isAirOrWaterLoggable(getLevel(), pos)) return true;
 
         HashSet<BlockPos> blacklistedBlocks = new HashSet<>();
@@ -267,6 +274,8 @@ public abstract class AbstractTankValve extends AbstractTankEntity implements IF
     }
 
     private boolean searchAlgorithm() {
+        if (getLevel() == null) return false;
+
         getAirBlocks().clear();
         getFrameBlocks().clear();
 
@@ -345,14 +354,18 @@ public abstract class AbstractTankValve extends AbstractTankEntity implements IF
     }
 
     private boolean checkInvalid(HashSet<BlockPos> blacklistedBlocks, HashSet<BlockPos> fallingBlocks, HashSet<BlockPos> invalidBlocks, int currentAirBlocks, int maxAirBlocks) {
-        boolean invalid = blacklistedBlocks.size() > 0 || fallingBlocks.size() > 0 || currentAirBlocks > maxAirBlocks;
+        boolean invalid = !blacklistedBlocks.isEmpty() || !fallingBlocks.isEmpty() || currentAirBlocks > maxAirBlocks;
 
         if (currentAirBlocks > maxAirBlocks) {
             GenericUtil.sendMessageToClient(buildPlayer, "chat.ffs.valve_too_much_air", false, maxAirBlocks);
             return invalid;
         }
 
-        if (blacklistedBlocks.size() > 0) {
+        if (getLevel() == null) {
+            return true;
+        }
+
+        if (!blacklistedBlocks.isEmpty()) {
             BlockPos firstPos = blacklistedBlocks.stream().findFirst().get();
             BlockState state = getLevel().getBlockState(firstPos);
 
@@ -368,7 +381,7 @@ public abstract class AbstractTankValve extends AbstractTankEntity implements IF
             );
         }
 
-        if (fallingBlocks.size() > 0) {
+        if (!fallingBlocks.isEmpty()) {
             BlockPos firstPos = fallingBlocks.stream().findFirst().get();
             BlockState state = getLevel().getBlockState(firstPos);
 
@@ -384,7 +397,7 @@ public abstract class AbstractTankValve extends AbstractTankEntity implements IF
             );
         }
 
-        if (invalidBlocks.size() > 0) {
+        if (!invalidBlocks.isEmpty()) {
             BlockPos firstPos = invalidBlocks.stream().findFirst().get();
             BlockState state = getLevel().getBlockState(firstPos);
 
@@ -408,6 +421,10 @@ public abstract class AbstractTankValve extends AbstractTankEntity implements IF
     private HashSet<BlockPos> getInvalidFrameBlocks() {
         HashSet<BlockPos> invalidBlocks = new HashSet<>();
 
+        if (getLevel() == null) {
+            return invalidBlocks;
+        }
+
         for (int layer : getFrameBlocks().keySet()) {
             for (BlockPos pos : getFrameBlocks().get(layer)) {
                 BlockState checkState = getLevel().getBlockState(pos);
@@ -422,12 +439,16 @@ public abstract class AbstractTankValve extends AbstractTankEntity implements IF
     }
 
     private boolean isBlockBlacklisted(BlockPos pos, BlockState state) {
-        if (!hasLevel() || getLevel().getBlockEntity(pos) instanceof AbstractTankEntity) return false;
+        if (getLevel() == null || getLevel().getBlockEntity(pos) instanceof AbstractTankEntity) return false;
 
         return state.is(FancyFluidStorage.TANK_BLACKLIST);
     }
 
     private boolean setupTank() {
+        if (getLevel() == null) {
+            return false;
+        }
+
         if (!searchAlgorithm()) {
             return false;
         }
@@ -516,7 +537,7 @@ public abstract class AbstractTankValve extends AbstractTankEntity implements IF
                         tankTiles.add(valve);
                     } else if (tile instanceof AbstractTankEntity tankTile) {
                         tankTile.setValvePos(getBlockPos());
-                        tankTiles.add((AbstractTankEntity) tile);
+                        tankTiles.add(tankTile);
                     }
                 }
             }
@@ -531,7 +552,7 @@ public abstract class AbstractTankValve extends AbstractTankEntity implements IF
     }
 
     public void breakTank() {
-        if (hasLevel() && getLevel().isClientSide() || isRemoved()) {
+        if (getLevel() == null || getLevel().isClientSide() || isRemoved()) {
             return;
         }
 
@@ -588,7 +609,7 @@ public abstract class AbstractTankValve extends AbstractTankEntity implements IF
     }
 
     private void updateBlockAndNeighbors(boolean onlyThis) {
-        if (getLevel().isClientSide())
+        if (getLevel() == null || getLevel().isClientSide())
             return;
 
         markForUpdateNow();
@@ -605,6 +626,8 @@ public abstract class AbstractTankValve extends AbstractTankEntity implements IF
     }
 
     private void updateComparatorOutput() {
+        if (getLevel() == null) return;
+
         if (this.lastComparatorOut != getComparatorOutput()) {
             this.lastComparatorOut = getComparatorOutput();
             if (isMain()) {
@@ -715,8 +738,7 @@ public abstract class AbstractTankValve extends AbstractTankEntity implements IF
     }
 
     @Override
-    public AABB getRenderBoundingBox(AbstractTankValve blockEntity)
-    {
+    public @NotNull AABB getRenderBoundingBox(@NotNull AbstractTankValve blockEntity) {
         return AABB.INFINITE;
     }
 

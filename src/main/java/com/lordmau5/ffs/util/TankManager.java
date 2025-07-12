@@ -37,70 +37,12 @@ import java.util.TreeMap;
 public class TankManager {
 
     public static TankManager INSTANCE = new TankManager();
-
-    private static class HashMapCache {
-        private final HashMap<ResourceKey<Level>, HashMap<BlockPos, TreeMap<Integer, HashSet<BlockPos>>>> valveToFrameBlocks = new HashMap<>();
-        private final HashMap<ResourceKey<Level>, HashMap<BlockPos, TreeMap<Integer, HashSet<BlockPos>>>> valveToAirBlocks = new HashMap<>();
-        private final HashMap<ResourceKey<Level>, HashMap<BlockPos, BlockPos>> frameBlockToValve = new HashMap<>();
-        private final HashMap<ResourceKey<Level>, HashMap<BlockPos, BlockPos>> airBlockToValve = new HashMap<>();
-
-        private final HashMap<ResourceKey<Level>, HashSet<BlockPos>> blocksToCheck = new HashMap<>();
-
-        private HashMap<BlockPos, TreeMap<Integer, HashSet<BlockPos>>> getValveToFrameBlocks(Level world) {
-            ResourceKey<Level> dimension = world.dimension();
-
-            valveToFrameBlocks.putIfAbsent(dimension, new HashMap<>());
-
-            return valveToFrameBlocks.get(dimension);
-        }
-
-        private HashMap<BlockPos, TreeMap<Integer, HashSet<BlockPos>>> getValveToAirBlocks(Level world) {
-            ResourceKey<Level> dimension = world.dimension();
-
-            valveToAirBlocks.putIfAbsent(dimension, new HashMap<>());
-
-            return valveToAirBlocks.get(dimension);
-        }
-
-        private HashMap<BlockPos, BlockPos> getFrameBlockToValve(Level world) {
-            ResourceKey<Level> dimension = world.dimension();
-
-            frameBlockToValve.putIfAbsent(dimension, new HashMap<>());
-
-            return frameBlockToValve.get(dimension);
-        }
-
-        private HashMap<BlockPos, BlockPos> getAirBlockToValve(Level world) {
-            ResourceKey<Level> dimension = world.dimension();
-
-            airBlockToValve.putIfAbsent(dimension, new HashMap<>());
-
-            return airBlockToValve.get(dimension);
-        }
-
-        private HashSet<BlockPos> getBlocksToCheck(Level world) {
-            ResourceKey<Level> dimension = world.dimension();
-
-            blocksToCheck.putIfAbsent(dimension, new HashSet<>());
-
-            return blocksToCheck.get(dimension);
-        }
-
-        private void clear() {
-            valveToFrameBlocks.clear();
-            valveToAirBlocks.clear();
-            frameBlockToValve.clear();
-            airBlockToValve.clear();
-            blocksToCheck.clear();
-        }
-    }
+    private final HashMapCache CLIENT = new HashMapCache();
+    private final HashMapCache SERVER = new HashMapCache();
 
     public TankManager() {
         NeoForge.EVENT_BUS.register(this);
     }
-
-    private final HashMapCache CLIENT = new HashMapCache();
-    private final HashMapCache SERVER = new HashMapCache();
 
     public HashMapCache get(@Nullable Level world) {
         return (world != null && world.isClientSide()) ? CLIENT : SERVER;
@@ -364,6 +306,63 @@ public class TankManager {
         }
 
         INSTANCE.removeAllForDimension(world);
+    }
+
+    private static class HashMapCache {
+        private final HashMap<ResourceKey<Level>, HashMap<BlockPos, TreeMap<Integer, HashSet<BlockPos>>>> valveToFrameBlocks = new HashMap<>();
+        private final HashMap<ResourceKey<Level>, HashMap<BlockPos, TreeMap<Integer, HashSet<BlockPos>>>> valveToAirBlocks = new HashMap<>();
+        private final HashMap<ResourceKey<Level>, HashMap<BlockPos, BlockPos>> frameBlockToValve = new HashMap<>();
+        private final HashMap<ResourceKey<Level>, HashMap<BlockPos, BlockPos>> airBlockToValve = new HashMap<>();
+
+        private final HashMap<ResourceKey<Level>, HashSet<BlockPos>> blocksToCheck = new HashMap<>();
+
+        private HashMap<BlockPos, TreeMap<Integer, HashSet<BlockPos>>> getValveToFrameBlocks(Level world) {
+            ResourceKey<Level> dimension = world.dimension();
+
+            valveToFrameBlocks.putIfAbsent(dimension, new HashMap<>());
+
+            return valveToFrameBlocks.get(dimension);
+        }
+
+        private HashMap<BlockPos, TreeMap<Integer, HashSet<BlockPos>>> getValveToAirBlocks(Level world) {
+            ResourceKey<Level> dimension = world.dimension();
+
+            valveToAirBlocks.putIfAbsent(dimension, new HashMap<>());
+
+            return valveToAirBlocks.get(dimension);
+        }
+
+        private HashMap<BlockPos, BlockPos> getFrameBlockToValve(Level world) {
+            ResourceKey<Level> dimension = world.dimension();
+
+            frameBlockToValve.putIfAbsent(dimension, new HashMap<>());
+
+            return frameBlockToValve.get(dimension);
+        }
+
+        private HashMap<BlockPos, BlockPos> getAirBlockToValve(Level world) {
+            ResourceKey<Level> dimension = world.dimension();
+
+            airBlockToValve.putIfAbsent(dimension, new HashMap<>());
+
+            return airBlockToValve.get(dimension);
+        }
+
+        private HashSet<BlockPos> getBlocksToCheck(Level world) {
+            ResourceKey<Level> dimension = world.dimension();
+
+            blocksToCheck.putIfAbsent(dimension, new HashSet<>());
+
+            return blocksToCheck.get(dimension);
+        }
+
+        private void clear() {
+            valveToFrameBlocks.clear();
+            valveToAirBlocks.clear();
+            frameBlockToValve.clear();
+            airBlockToValve.clear();
+            blocksToCheck.clear();
+        }
     }
 
 }

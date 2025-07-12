@@ -21,9 +21,9 @@ public class FFSBlocks {
 
     public static final DeferredHolder<Block, Block> fluidValve = register("fluid_valve", BlockFluidValve::new);
 
-    public static final  DeferredHolder<Block, Block> tankComputer = register("tank_computer", BlockTankComputer::new);
+    public static final DeferredHolder<Block, Block> tankComputer = register("tank_computer", BlockTankComputer::new);
 
-    private static <T extends Block>  DeferredHolder<Block, Block> register(final String name, final Supplier<T> block) {
+    private static <T extends Block> DeferredHolder<Block, Block> register(final String name, final Supplier<T> block) {
         return BLOCKS.register(name, block);
     }
 

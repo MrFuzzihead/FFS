@@ -25,13 +25,20 @@ public abstract class AbstractTankEntity extends BlockEntity {
      * INameableTile, IFacingTile
      */
     protected Direction tile_facing = null;
-    String tile_name = "";
-
     protected int needsUpdate = 0;
+    String tile_name = "";
     private BlockPos mainValvePos;
 
     public AbstractTankEntity(BlockEntityType<?> tileEntityTypeIn, BlockPos pos, BlockState state) {
         super(tileEntityTypeIn, pos, state);
+    }
+
+    public static <T extends BlockEntity> void tick(Level level, BlockPos pos, BlockState state, T be) {
+        AbstractTankEntity tile = (AbstractTankEntity) be;
+
+        if (tile.needsUpdate > 0) {
+            tile.markForUpdate();
+        }
     }
 
     public void setNeedsUpdate() {
@@ -128,14 +135,6 @@ public abstract class AbstractTankEntity extends BlockEntity {
     public void markForUpdateNow(int when) {
         this.needsUpdate = Math.min(when, 20);
         markForUpdate();
-    }
-
-    public static <T extends BlockEntity> void tick(Level level, BlockPos pos, BlockState state, T be) {
-        AbstractTankEntity tile = (AbstractTankEntity) be;
-
-        if (tile.needsUpdate > 0) {
-            tile.markForUpdate();
-        }
     }
 
     @Override

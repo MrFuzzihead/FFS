@@ -29,68 +29,7 @@ import java.util.TreeMap;
 public class ValveRenderer implements BlockEntityRenderer<BlockEntityFluidValve> {
 
     BlockEntityRendererProvider.Context context;
-
-    private static class RenderBlock {
-        final BlockPos pos;
-        final int layer;
-        final float height;
-        final boolean isTopLayer;
-        final HashSet<Direction> validFaces;
-
-        private RenderBlock(BlockPos pos, int layer, float height, boolean isTopLayer) {
-            this.pos = pos;
-            this.layer = layer;
-            this.height = height;
-            this.isTopLayer = isTopLayer;
-
-            this.validFaces = new HashSet<>();
-        }
-
-        private void addFace(Direction direction) {
-            this.validFaces.add(direction);
-        }
-
-        @Override
-        public int hashCode() {
-            return pos.hashCode();
-        }
-    }
-
-    private static class ValveCache {
-        final BlockEntityFluidValve valve;
-        final HashSet<RenderBlock> validRenderBlocks;
-
-        int cachedAmount = 0;
-        int updateDelta = 0;
-
-        private ValveCache(BlockEntityFluidValve valve) {
-            this.valve = valve;
-            this.validRenderBlocks = new HashSet<>();
-
-            this.cachedAmount = valve.getTankConfig().getFluidAmount();
-        }
-
-        private void updateCachedAmount() {
-            int amount = valve.getTankConfig().getFluidAmount();
-
-            updateDelta += Math.abs(amount - cachedAmount);
-
-            cachedAmount = amount;
-
-            if (updateDelta >= 1000) {
-                this.validRenderBlocks.clear();
-
-                updateDelta = 0;
-            }
-        }
-
-        @Override
-        public int hashCode() {
-            return valve.hashCode();
-        }
-    }
-
-    private HashMap<BlockEntityFluidValve, ValveCache> cache;
+    private final HashMap<BlockEntityFluidValve, ValveCache> cache;
 
     public ValveRenderer(BlockEntityRendererProvider.Context context) {
         this.context = context;
@@ -182,7 +121,7 @@ public class ValveRenderer implements BlockEntityRenderer<BlockEntityFluidValve>
 
         if (cache.validRenderBlocks.size() > 0) return cache;
 
-        int topLayer = airBlocks.keySet().size() - 1;
+        int topLayer = airBlocks.size() - 1;
         for (Integer layer : airBlocks.keySet()) {
             for (BlockPos pos : airBlocks.get(layer)) {
                 var rb = new RenderBlock(pos, layer, 1.0f, layer == topLayer);
@@ -251,7 +190,7 @@ public class ValveRenderer implements BlockEntityRenderer<BlockEntityFluidValve>
 
         BlockPos playerPos = Minecraft.getInstance().player.blockPosition();
 
-        int topLayer = airBlocks.keySet().size() - 1;
+        int topLayer = airBlocks.size() - 1;
         for (RenderBlock rb : cache.validRenderBlocks) {
             if (!playerPos.closerThan(rb.pos, 150)) continue;
 
@@ -272,7 +211,7 @@ public class ValveRenderer implements BlockEntityRenderer<BlockEntityFluidValve>
 
         BlockPos playerPos = Minecraft.getInstance().player.blockPosition();
 
-        int topLayer = airBlocks.keySet().size() - 1;
+        int topLayer = airBlocks.size() - 1;
         for (RenderBlock rb : cache.validRenderBlocks) {
             if (!playerPos.closerThan(rb.pos, 150)) continue;
 
@@ -376,5 +315,65 @@ public class ValveRenderer implements BlockEntityRenderer<BlockEntityFluidValve>
         }
 
         return renderedFaces;
+    }
+
+    private static class RenderBlock {
+        final BlockPos pos;
+        final int layer;
+        final float height;
+        final boolean isTopLayer;
+        final HashSet<Direction> validFaces;
+
+        private RenderBlock(BlockPos pos, int layer, float height, boolean isTopLayer) {
+            this.pos = pos;
+            this.layer = layer;
+            this.height = height;
+            this.isTopLayer = isTopLayer;
+
+            this.validFaces = new HashSet<>();
+        }
+
+        private void addFace(Direction direction) {
+            this.validFaces.add(direction);
+        }
+
+        @Override
+        public int hashCode() {
+            return pos.hashCode();
+        }
+    }
+
+    private static class ValveCache {
+        final BlockEntityFluidValve valve;
+        final HashSet<RenderBlock> validRenderBlocks;
+
+        int cachedAmount = 0;
+        int updateDelta = 0;
+
+        private ValveCache(BlockEntityFluidValve valve) {
+            this.valve = valve;
+            this.validRenderBlocks = new HashSet<>();
+
+            this.cachedAmount = valve.getTankConfig().getFluidAmount();
+        }
+
+        private void updateCachedAmount() {
+            int amount = valve.getTankConfig().getFluidAmount();
+
+            updateDelta += Math.abs(amount - cachedAmount);
+
+            cachedAmount = amount;
+
+            if (updateDelta >= 1000) {
+                this.validRenderBlocks.clear();
+
+                updateDelta = 0;
+            }
+        }
+
+        @Override
+        public int hashCode() {
+            return valve.hashCode();
+        }
     }
 }

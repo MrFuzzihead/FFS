@@ -94,8 +94,7 @@ public class BlockFluidValve extends AbstractBlock {
     }
 
     @Override
-    public List<ItemStack> getDrops(BlockState pState, LootParams.Builder pParams)
-    {
+    public List<ItemStack> getDrops(BlockState pState, LootParams.Builder pParams) {
         List<ItemStack> drops = new ArrayList<>();
 
         BlockEntity tile = pParams.getOptionalParameter(LootContextParams.BLOCK_ENTITY);

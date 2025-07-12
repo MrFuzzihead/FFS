@@ -7,10 +7,6 @@ import net.minecraft.client.renderer.RenderType;
 
 public class FFSRenderTypes extends RenderType {
 
-    public FFSRenderTypes(String pName, VertexFormat pFormat, VertexFormat.Mode pMode, int pBufferSize, boolean pAffectsCrumbling, boolean pSortOnUpload, Runnable pSetupState, Runnable pClearState) {
-        super(pName, pFormat, pMode, pBufferSize, pAffectsCrumbling, pSortOnUpload, pSetupState, pClearState);
-    }
-
     public static final RenderType fluidRenderType = RenderType.create(
             FancyFluidStorage.MOD_ID + ":block_render_type",
             DefaultVertexFormat.NEW_ENTITY, VertexFormat.Mode.QUADS, 256, false, true,
@@ -23,5 +19,9 @@ public class FFSRenderTypes extends RenderType {
                     .setOverlayState(OVERLAY)
                     .createCompositeState(true)
     );
+
+    public FFSRenderTypes(String pName, VertexFormat pFormat, VertexFormat.Mode pMode, int pBufferSize, boolean pAffectsCrumbling, boolean pSortOnUpload, Runnable pSetupState, Runnable pClearState) {
+        super(pName, pFormat, pMode, pBufferSize, pAffectsCrumbling, pSortOnUpload, pSetupState, pClearState);
+    }
 
 }

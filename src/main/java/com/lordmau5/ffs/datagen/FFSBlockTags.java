@@ -12,10 +12,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.CompletableFuture;
 
-public class FFSBlockTags extends BlockTagsProvider
-{
-    public FFSBlockTags(PackOutput output, CompletableFuture<HolderLookup.Provider> lookupProvider, String modId, @Nullable ExistingFileHelper existingFileHelper)
-    {
+public class FFSBlockTags extends BlockTagsProvider {
+    public FFSBlockTags(PackOutput output, CompletableFuture<HolderLookup.Provider> lookupProvider, String modId, @Nullable ExistingFileHelper existingFileHelper) {
         super(output, lookupProvider, modId, existingFileHelper);
     }
 
@@ -25,8 +23,7 @@ public class FFSBlockTags extends BlockTagsProvider
     }
 
     @Override
-    protected void addTags(HolderLookup.Provider provider)
-    {
+    protected void addTags(HolderLookup.Provider provider) {
         tag(BlockTags.MINEABLE_WITH_PICKAXE).add(FFSBlocks.fluidValve.get(), FFSBlocks.tankComputer.get());
 
         tag(FancyFluidStorage.TANK_BLACKLIST).add(Blocks.GRASS_BLOCK, Blocks.DIRT, Blocks.DIRT_PATH, Blocks.SPONGE, Blocks.WET_SPONGE, Blocks.PODZOL);

@@ -11,16 +11,14 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 
 public class NetworkHandler {
-    private static int id = 0;
-
     private static final String PROTOCOL_VERSION = "1";
+    private static final int id = 0;
 
     public static void init(IEventBus bus) {
         bus.addListener(NetworkHandler::registerEvent);
     }
 
-    public static void registerEvent(RegisterPayloadHandlersEvent event)
-    {
+    public static void registerEvent(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar(FancyFluidStorage.MOD_ID).versioned(PROTOCOL_VERSION);
         registerChannels(registrar);
     }

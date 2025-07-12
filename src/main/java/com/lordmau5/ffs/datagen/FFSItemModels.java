@@ -10,8 +10,7 @@ import net.neoforged.neoforge.client.model.generators.ItemModelBuilder;
 import net.neoforged.neoforge.client.model.generators.ItemModelProvider;
 import net.neoforged.neoforge.common.data.ExistingFileHelper;
 
-public class FFSItemModels extends ItemModelProvider
-{
+public class FFSItemModels extends ItemModelProvider {
 
     public FFSItemModels(DataGenerator packOutput, ExistingFileHelper existingFileHelper) {
         super(packOutput.getPackOutput(), FancyFluidStorage.MOD_ID, existingFileHelper);

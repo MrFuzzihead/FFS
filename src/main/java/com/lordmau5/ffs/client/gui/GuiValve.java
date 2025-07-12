@@ -36,16 +36,16 @@ import java.util.Objects;
 import java.util.Optional;
 
 public class GuiValve extends Screen {
-    private static final ResourceLocation TEXTURE_VALVE = ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID,"textures/gui/valve/valve.png");
-    private static final ResourceLocation TEXTURE_MAIN_VALVE = ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID,"textures/gui/valve/main_valve.png");
+    private static final ResourceLocation TEXTURE_VALVE = ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID, "textures/gui/valve/valve.png");
+    private static final ResourceLocation TEXTURE_MAIN_VALVE = ResourceLocation.fromNamespaceAndPath(FancyFluidStorage.MOD_ID, "textures/gui/valve/main_valve.png");
     private final @Nullable AbstractTankValve valve;
     private final @Nullable AbstractTankValve mainValve;
     private final int xSize_Valve = 196;
     private final int ySize_Valve = 128;
     private final int xSize_NoValve = 96;
     private final int ySize_NoValve = 128;
-    private GuiButtonLockFluid lockFluidButton;
     private final boolean isValve;
+    private GuiButtonLockFluid lockFluidButton;
     private AbstractTankEntity tile;
     private EditBox tileName;
     private int left = 0, top = 0;
@@ -67,6 +67,13 @@ public class GuiValve extends Screen {
         } else {
             this.valve = this.mainValve = tile.getMainValve();
         }
+    }
+
+    private static void buildSquare(Matrix4f matrix, BufferBuilder builder, float x1, float x2, float y1, float y2, float z, float u1, float u2, float v1, float v2) {
+        builder.addVertex(matrix, x1, y2, z).setUv(u1, v2);
+        builder.addVertex(matrix, x2, y2, z).setUv(u2, v2);
+        builder.addVertex(matrix, x2, y1, z).setUv(u2, v1);
+        builder.addVertex(matrix, x1, y1, z).setUv(u1, v1);
     }
 
     private void initGuiValve() {
@@ -331,12 +338,5 @@ public class GuiValve extends Screen {
 
         RenderSystem.enableDepthTest();
         BufferUploader.drawWithShader(Objects.requireNonNull(builder.build()));
-    }
-
-    private static void buildSquare(Matrix4f matrix, BufferBuilder builder, float x1, float x2, float y1, float y2, float z, float u1, float u2, float v1, float v2) {
-        builder.addVertex(matrix, x1, y2, z).setUv(u1, v2);
-        builder.addVertex(matrix, x2, y2, z).setUv(u2, v2);
-        builder.addVertex(matrix, x2, y1, z).setUv(u2, v1);
-        builder.addVertex(matrix, x1, y1, z).setUv(u1, v1);
     }
 }
