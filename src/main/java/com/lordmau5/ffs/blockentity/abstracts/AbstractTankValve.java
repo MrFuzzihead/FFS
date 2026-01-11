@@ -280,7 +280,7 @@ public abstract class AbstractTankValve extends AbstractTankEntity implements IF
         getFrameBlocks().clear();
 
         int currentAirBlocks = 1;
-        int maxAirBlocks = ServerConfig.general.maxAirBlocks;
+        int maxAirBlocks = ServerConfig.CONFIG.maxAirBlocks.get();
         BlockPos insidePos = getBlockPos().relative(getTileFacing());
 
         Deque<BlockPos> to_check = new ArrayDeque<>();
@@ -457,7 +457,7 @@ public abstract class AbstractTankValve extends AbstractTankEntity implements IF
         for (int layer : getAirBlocks().keySet()) {
             size += getAirBlocks().get(layer).size();
         }
-        getTankConfig().setFluidCapacity(size * ServerConfig.general.mbPerTankBlock);
+        getTankConfig().setFluidCapacity(size * ServerConfig.CONFIG.mbPerTankBlock.get());
 
         for (int layer : getAirBlocks().keySet()) {
             for (BlockPos pos : getAirBlocks().get(layer)) {

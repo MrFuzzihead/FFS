@@ -29,6 +29,9 @@ public class FFSLanguageProvider extends LanguageProvider {
         add(FFSItems.tit.get(), "T.I.T. (Tank Interface Technician)");
         add(FFSItems.titEgg.get(), "T.I.T. Egg");
 
+        add(mod_id + ".config.general.mb_per_tank_block", "mB Per Virtual Tank");
+        add(mod_id + ".config.general.max_air_blocks", "Maximum Air Blocks");
+
         add("chat." + mod_id + ".valve_other_tank", "One or more blocks already belong to another tank.");
         add("chat." + mod_id + ".valve_too_much_air", "Too many air blocks. Limit: %s");
         add("chat." + mod_id + ".valve_different_fluids", "One or more valves contain different fluids. Could not build the tank.");

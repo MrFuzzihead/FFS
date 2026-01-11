@@ -160,7 +160,7 @@ public class ValveRenderer implements BlockEntityRenderer<BlockEntityFluidValve>
                 continue;
             }
 
-            float layerCapacity = ServerConfig.general.mbPerTankBlock * layerBlockSize;
+            float layerCapacity = ServerConfig.CONFIG.mbPerTankBlock.get() * layerBlockSize;
             float height = Math.min(1, fluidLeft / layerCapacity);
 
             fluidLeft -= layerCapacity;

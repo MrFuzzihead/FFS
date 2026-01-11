@@ -7,7 +7,6 @@ import com.lordmau5.ffs.config.ServerConfig;
 import com.lordmau5.ffs.datagen.DataGenerators;
 import com.lordmau5.ffs.holder.*;
 import com.lordmau5.ffs.network.NetworkHandler;
-import com.lordmau5.ffs.util.Config;
 import com.lordmau5.ffs.util.GenericUtil;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -55,7 +54,7 @@ public class FancyFluidStorage {
             event.registerBlockEntity(Capabilities.FluidHandler.BLOCK, FFSBlockEntities.tileEntityFluidValve.get(), BlockEntityFluidValve::getFluidHandler);
         });
 
-        container.registerConfig(ModConfig.Type.SERVER, Config.walkClass(ServerConfig.class, bus));
+        container.registerConfig(ModConfig.Type.SERVER, ServerConfig.CONFIG_SPEC);
     }
 
     private void setupClient(final FMLClientSetupEvent event) {
