@@ -125,7 +125,8 @@ public class GenericUtil {
         } else if (!block.renderAsNormalBlock()) {
             return false;
         } else {
-            return FancyFluidStorage.instance.TANK_FRAME_MODE == FancyFluidStorage.TankFrameMode.DIFFERENT_BLOCK || block.func_149730_j();
+            return FancyFluidStorage.instance.TANK_FRAME_MODE == FancyFluidStorage.TankFrameMode.DIFFERENT_BLOCK
+                || block.func_149730_j();
         }
     }
 
