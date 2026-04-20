@@ -8,7 +8,6 @@ import net.minecraftforge.common.config.Property;
 
 import com.lordmau5.ffs.blocks.BlockTankFrame;
 import com.lordmau5.ffs.blocks.BlockValve;
-import com.lordmau5.ffs.compat.FFSAnalytics;
 import com.lordmau5.ffs.network.NetworkHandler;
 import com.lordmau5.ffs.proxy.CommonProxy;
 import com.lordmau5.ffs.proxy.GuiHandler;
@@ -39,7 +38,6 @@ public class FancyFluidStorage {
     public static BlockValve blockValve;
     public static BlockTankFrame blockTankFrame;
     public static Configuration config;
-    public static FFSAnalytics analytics;
     @Instance("FFS")
     public static FancyFluidStorage instance;
     @SidedProxy(clientSide = "com.lordmau5.ffs.proxy.ClientProxy", serverSide = "com.lordmau5.ffs.proxy.CommonProxy")
@@ -117,7 +115,6 @@ public class FancyFluidStorage {
         GameRegistry.registerTileEntity(TileEntityTankFrame.class, "tileEntityTankFrame");
         NetworkRegistry.INSTANCE.registerGuiHandler(this, new GuiHandler());
         NetworkHandler.registerChannels(event.getSide());
-        analytics = new FFSAnalytics();
     }
 
     @EventHandler

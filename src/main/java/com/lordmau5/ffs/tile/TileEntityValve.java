@@ -28,14 +28,12 @@ import net.minecraftforge.fluids.IFluidTank;
 
 import com.lordmau5.ffs.FancyFluidStorage;
 import com.lordmau5.ffs.blocks.BlockTankFrame;
-import com.lordmau5.ffs.compat.FFSAnalytics;
 import com.lordmau5.ffs.util.ExtendedBlock;
 import com.lordmau5.ffs.util.GenericUtil;
 import com.lordmau5.ffs.util.Position3D;
 import com.rwtema.funkylocomotion.api.IMoveCheck;
 
 import buildcraft.api.transport.IPipeConnection;
-import buildcraft.api.transport.IPipeConnection.ConnectOverride;
 import buildcraft.api.transport.IPipeTile;
 import buildcraft.api.transport.IPipeTile.PipeType;
 import cpw.mods.fml.common.Optional.Interface;
@@ -108,20 +106,14 @@ public class TileEntityValve extends TileEntity
                     .markForUpdate(true);
                 this.needsUpdate = false;
                 if (this.fluidIntake != 0) {
-                    FancyFluidStorage.analytics
-                        .event(FFSAnalytics.Category.TANK, FFSAnalytics.Event.FLUID_INTAKE, this.fluidIntake);
                     this.fluidIntake = 0;
                 }
 
                 if (this.fluidOuttake != 0) {
-                    FancyFluidStorage.analytics
-                        .event(FFSAnalytics.Category.TANK, FFSAnalytics.Event.FLUID_OUTTAKE, this.fluidOuttake);
                     this.fluidOuttake = 0;
                 }
 
                 if (this.rainIntake != 0) {
-                    FancyFluidStorage.analytics
-                        .event(FFSAnalytics.Category.TANK, FFSAnalytics.Event.RAIN_INTAKE, this.rainIntake);
                     this.rainIntake = 0;
                 }
             }
@@ -785,7 +777,6 @@ public class TileEntityValve extends TileEntity
                 this.tankFrames.clear();
                 this.otherValves.clear();
                 this.updateBlockAndNeighbors();
-                FancyFluidStorage.analytics.event(FFSAnalytics.Category.TANK, FFSAnalytics.Event.TANK_BREAK);
             }
         }
     }
