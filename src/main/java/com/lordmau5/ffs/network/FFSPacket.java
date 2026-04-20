@@ -5,7 +5,7 @@ import com.lordmau5.ffs.tile.TileEntityValve;
 import cpw.mods.fml.common.network.ByteBufUtils;
 import io.netty.buffer.ByteBuf;
 
-public abstract class ffsPacket {
+public abstract class FFSPacket {
 
     public abstract void encode(ByteBuf var1);
 
@@ -16,7 +16,7 @@ public abstract class ffsPacket {
 
     public static class Server {
 
-        public static class UpdateAutoOutput extends ffsPacket {
+        public static class UpdateAutoOutput extends FFSPacket {
 
             public int x;
             public int y;
@@ -56,7 +56,7 @@ public abstract class ffsPacket {
             }
         }
 
-        public static class UpdateValveName extends ffsPacket {
+        public static class UpdateValveName extends FFSPacket {
 
             public int x;
             public int y;

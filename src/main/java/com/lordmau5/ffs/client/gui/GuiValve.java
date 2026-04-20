@@ -14,8 +14,8 @@ import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 
 import com.lordmau5.ffs.client.FluidHelper;
+import com.lordmau5.ffs.network.FFSPacket;
 import com.lordmau5.ffs.network.NetworkHandler;
-import com.lordmau5.ffs.network.ffsPacket;
 import com.lordmau5.ffs.tile.TileEntityValve;
 import com.lordmau5.ffs.util.GenericUtil;
 
@@ -62,7 +62,7 @@ public class GuiValve extends GuiScreen {
         if (!this.isFrame && !this.valveName.getText()
             .isEmpty()) {
             NetworkHandler
-                .sendPacketToServer(new ffsPacket.Server.UpdateValveName(this.valve, this.valveName.getText()));
+                .sendPacketToServer(new FFSPacket.Server.UpdateValveName(this.valve, this.valveName.getText()));
         }
     }
 
@@ -145,7 +145,7 @@ public class GuiValve extends GuiScreen {
             GuiToggle toggle = (GuiToggle) btn;
             this.valve.setAutoOutput(toggle.getState());
             NetworkHandler
-                .sendPacketToServer(new ffsPacket.Server.UpdateAutoOutput(this.valve, this.valve.getAutoOutput()));
+                .sendPacketToServer(new FFSPacket.Server.UpdateAutoOutput(this.valve, this.valve.getAutoOutput()));
         }
     }
 

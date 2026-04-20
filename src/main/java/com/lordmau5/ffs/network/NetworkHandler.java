@@ -46,14 +46,14 @@ public class NetworkHandler {
             .findChannelHandlerNameForType(PacketCodec.class);
     }
 
-    public static Packet getProxyPacket(ffsPacket packet) {
+    public static Packet getProxyPacket(FFSPacket packet) {
         return channels.get(
             FMLCommonHandler.instance()
                 .getEffectiveSide())
             .generatePacketFrom(packet);
     }
 
-    public static void sendPacketToPlayer(ffsPacket packet, EntityPlayer player) {
+    public static void sendPacketToPlayer(FFSPacket packet, EntityPlayer player) {
         FMLEmbeddedChannel channel = channels.get(Side.SERVER);
         channel.attr(FMLOutboundHandler.FML_MESSAGETARGET)
             .set(OutboundTarget.PLAYER);
@@ -62,14 +62,14 @@ public class NetworkHandler {
         channel.writeOutbound(new Object[] { packet });
     }
 
-    public static void sendPacketToAllPlayers(ffsPacket packet) {
+    public static void sendPacketToAllPlayers(FFSPacket packet) {
         FMLEmbeddedChannel channel = channels.get(Side.SERVER);
         channel.attr(FMLOutboundHandler.FML_MESSAGETARGET)
             .set(OutboundTarget.ALL);
         channel.writeOutbound(new Object[] { packet });
     }
 
-    public static void sendPacketToServer(ffsPacket packet) {
+    public static void sendPacketToServer(FFSPacket packet) {
         FMLEmbeddedChannel channel = channels.get(Side.CLIENT);
         channel.attr(FMLOutboundHandler.FML_MESSAGETARGET)
             .set(OutboundTarget.TOSERVER);
