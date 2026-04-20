@@ -1,98 +1,84 @@
 package com.lordmau5.ffs.network;
 
-import com.lordmau5.ffs.FancyFluidStorage;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.neoforge.network.PacketDistributor;
-import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
-import net.neoforged.neoforge.network.registration.PayloadRegistrar;
+import java.util.EnumMap;
 
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.network.NetHandlerPlayServer;
+import net.minecraft.network.Packet;
+
+import com.lordmau5.ffs.network.handlers.server.UpdateAutoOutput_Server;
+import com.lordmau5.ffs.network.handlers.server.UpdateValveName_Server;
+
+import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.network.FMLEmbeddedChannel;
+import cpw.mods.fml.common.network.FMLOutboundHandler;
+import cpw.mods.fml.common.network.FMLOutboundHandler.OutboundTarget;
+import cpw.mods.fml.common.network.NetworkRegistry;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPipeline;
 
 public class NetworkHandler {
-    private static final String PROTOCOL_VERSION = "1";
-    private static final int id = 0;
 
-    public static void init(IEventBus bus) {
-        bus.addListener(NetworkHandler::registerEvent);
+    private static EnumMap<Side, FMLEmbeddedChannel> channels;
+
+    public static void registerChannels(Side side) {
+        channels = NetworkRegistry.INSTANCE.newChannel("ffs", new ChannelHandler[] { new PacketCodec() });
+        ChannelPipeline pipeline = channels.get(Side.SERVER)
+            .pipeline();
+        String targetName = channels.get(Side.SERVER)
+            .findChannelHandlerNameForType(PacketCodec.class);
+        pipeline.addAfter(targetName, "UpdateAutoOutput_Server", new UpdateAutoOutput_Server());
+        pipeline.addAfter(targetName, "UpdateValveName_Server", new UpdateValveName_Server());
+        if (side.isClient()) {
+            registerClientHandlers();
+        }
     }
 
-    public static void registerEvent(RegisterPayloadHandlersEvent event) {
-        PayloadRegistrar registrar = event.registrar(FancyFluidStorage.MOD_ID).versioned(PROTOCOL_VERSION);
-        registerChannels(registrar);
+    @SideOnly(Side.CLIENT)
+    private static void registerClientHandlers() {
+        ChannelPipeline pipeline = channels.get(Side.CLIENT)
+            .pipeline();
+        String targetName = channels.get(Side.CLIENT)
+            .findChannelHandlerNameForType(PacketCodec.class);
     }
 
-    public static void registerChannels(PayloadRegistrar registrar) {
-        registerBiDirectionalHandlers(registrar);
-        registerServerHandlers(registrar);
-        registerClientHandlers(registrar);
+    public static Packet getProxyPacket(ffsPacket packet) {
+        return channels.get(
+            FMLCommonHandler.instance()
+                .getEffectiveSide())
+            .generatePacketFrom(packet);
     }
 
-    private static void registerBiDirectionalHandlers(PayloadRegistrar INSTANCE) {
-        // Update Fluid Lock
-        INSTANCE.playBidirectional(
-                FFSPacket.Server.UpdateFluidLock.TYPE,
-                StreamCodec.of((buff, packet) -> packet.write(buff), FFSPacket.Server.UpdateFluidLock::decode),
-                new FFSPacket.Server.UpdateFluidLock.Handler()
-        );
-
-        // Update Tile Name
-        INSTANCE.playBidirectional(
-                FFSPacket.Server.UpdateTileName.TYPE,
-                StreamCodec.of((buff, packet) -> packet.write(buff), FFSPacket.Server.UpdateTileName::decode),
-                new FFSPacket.Server.UpdateTileName.Handler()
-        );
+    public static void sendPacketToPlayer(ffsPacket packet, EntityPlayer player) {
+        FMLEmbeddedChannel channel = channels.get(Side.SERVER);
+        channel.attr(FMLOutboundHandler.FML_MESSAGETARGET)
+            .set(OutboundTarget.PLAYER);
+        channel.attr(FMLOutboundHandler.FML_MESSAGETARGETARGS)
+            .set(player);
+        channel.writeOutbound(new Object[] { packet });
     }
 
-    private static void registerServerHandlers(PayloadRegistrar INSTANCE) {
-        // On Tank Request
-        INSTANCE.playToServer(
-                FFSPacket.Server.OnTankRequest.TYPE,
-                StreamCodec.of((buff, packet) -> packet.write(buff), FFSPacket.Server.OnTankRequest::decode),
-                new FFSPacket.Server.OnTankRequest.Handler()
-        );
+    public static void sendPacketToAllPlayers(ffsPacket packet) {
+        FMLEmbeddedChannel channel = channels.get(Side.SERVER);
+        channel.attr(FMLOutboundHandler.FML_MESSAGETARGET)
+            .set(OutboundTarget.ALL);
+        channel.writeOutbound(new Object[] { packet });
     }
 
-    private static void registerClientHandlers(PayloadRegistrar INSTANCE) {
-        // Open GUI
-        INSTANCE.playToClient(
-                FFSPacket.Client.OpenGUI.TYPE,
-                StreamCodec.of((buff, packet) -> packet.write(buff), FFSPacket.Client.OpenGUI::decode),
-                new FFSPacket.Client.OpenGUI.Handler()
-        );
-
-        // On Tank Build
-        INSTANCE.playToClient(
-                FFSPacket.Client.OnTankBuild.TYPE,
-                StreamCodec.of((buff, packet) -> packet.write(buff), FFSPacket.Client.OnTankBuild::decode),
-                new FFSPacket.Client.OnTankBuild.Handler()
-        );
-
-        // On Tank Break
-        INSTANCE.playToClient(
-                FFSPacket.Client.OnTankBreak.TYPE,
-                StreamCodec.of((buff, packet) -> packet.write(buff), FFSPacket.Client.OnTankBreak::decode),
-                new FFSPacket.Client.OnTankBreak.Handler()
-        );
-
-        // Clear Tanks
-        INSTANCE.playToClient(
-                FFSPacket.Client.ClearTanks.TYPE,
-                StreamCodec.of((buff, packet) -> packet.write(buff), FFSPacket.Client.ClearTanks::decode),
-                new FFSPacket.Client.ClearTanks.Handler()
-        );
+    public static void sendPacketToServer(ffsPacket packet) {
+        FMLEmbeddedChannel channel = channels.get(Side.CLIENT);
+        channel.attr(FMLOutboundHandler.FML_MESSAGETARGET)
+            .set(OutboundTarget.TOSERVER);
+        channel.writeOutbound(new Object[] { packet });
     }
 
-    public static void sendPacketToPlayer(CustomPacketPayload msg, ServerPlayer player) {
-        PacketDistributor.sendToPlayer(player, msg);
-    }
-
-    public static void sendPacketToAllPlayers(CustomPacketPayload msg) {
-        PacketDistributor.sendToAllPlayers(msg);
-    }
-
-    public static void sendPacketToServer(CustomPacketPayload msg) {
-        PacketDistributor.sendToServer(msg);
+    public static EntityPlayerMP getPlayer(ChannelHandlerContext ctx) {
+        return ((NetHandlerPlayServer) ctx.channel()
+            .attr(NetworkRegistry.NET_HANDLER)
+            .get()).playerEntity;
     }
 }

@@ -1,0 +1,26 @@
+[{
+    "modid": "${modId}",
+    "name": "${modName}",
+    "description": "A simple fluid storage mod that's gonna fancy up your world!",
+    "mcversion": "${minecraftVersion}",
+    "version": "${modVersion}",
+    "url": "https://github.com/MrFuzzihead/FFS",
+    "updateUrl": "https://github.com/MrFuzzihead/FFS/releases/latest",
+    "authorList": [
+        "Lordmau5",
+        "maxpowa",
+        "MrFuzzihead"
+    ],
+    "credits": "Thanks to FridgeBoy for helping out with the math on the calculations.",
+    "logoFile": "",
+    "screenshots": [ ],
+    "parent": "",
+    "dependencies": [
+        "waila",
+        "BuildCraftAPI|Transport",
+        "chisel",
+        "OpenComputers",
+        "ComputerCraft",
+        "funkylocomotion"
+    ]
+}]
