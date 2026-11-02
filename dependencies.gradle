@@ -46,7 +46,7 @@ dependencies {
         "com.github.GTNewHorizons:BuildCraft:7.1.57:dev",
         "com.github.MrFuzzihead:Computercraft-Legacy:2.3.3:dev",
         "com.github.MrFuzzihead:Funkylocomotion:1.0.2:dev",
-        "com.github.GTNewHorizons:waila:1.9.15:dev",
+        "com.github.GTNewHorizons:waila:1.19.34:dev",
         "com.github.GTNewHorizons:OpenComputers:1.12.35-GTNH:dev",
         rfg.deobf("curse.maven:RemainInMotion-228462:2281430"),
     ]

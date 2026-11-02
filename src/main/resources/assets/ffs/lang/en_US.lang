@@ -1,2 +1,27 @@
 tile.blockValve.name=Tank Valve
 tile.blockTankFrame.name=Tank Frame
+
+gui.ffs.auto_output=Auto fluid output
+gui.ffs.valve_name=Valve Name:
+gui.ffs.empty=Empty
+gui.ffs.tank=%s Tank
+gui.ffs.frame=Tank Frame
+gui.ffs.temperature=%s K
+
+waila.ffs.head_valve=FFS Valve
+waila.ffs.head_frame=FFS Tank Frame
+waila.ffs.part_of_tank=Part of a tank
+waila.ffs.invalid=Invalid tank
+waila.ffs.valve=Name: %s
+waila.ffs.auto_output=Auto-output: %s
+waila.ffs.on=On
+waila.ffs.off=Off
+waila.ffs.fluid_line=Fluid: %s
+waila.ffs.fluid_none=Empty
+waila.ffs.amount=Amount: %s / %s mB
+waila.ffs.temperature=Temperature: %s K
+waila.ffs.dimensions=Dimensions: %s x %s x %s
+waila.ffs.tank_height=Tank height: %s, valve: %s
+waila.ffs.master=Master valve
+waila.ffs.slave=Slave valve
+waila.ffs.right_click=Right-click the valve to configure

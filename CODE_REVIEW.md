@@ -29,10 +29,19 @@ The harness is:
 | 4 | Renderer/GUI: face/normal fixes, render-pass global hack, scissor math, GL state restore, bounding boxes, lighting | done |
 | 5 | Build/packaging: `ffs` casing, resource domain, `mcmod.info`, optional dependency scopes, TE registry names, tests in CI | done |
 | 6 | Architecture: split `TileEntityValve` into structure/fluid/hazards/peripheral classes; shared CC/OC command layer | done |
+| 7 | License attribution/packaging, WAILA 1.19.34 data/config/advanced tooltip, GUI localization and name sync | done |
+
+### Test coverage shipped with batch 7
+
+`./gradlew headlessTest` now runs 87 JUnit 5 tests. Batch 7 added:
+
+- `LicenseNoticeTest` (3) - attribution/source/license URI, upstream license text and
+  jar packaging.
+- `WailaTankDataTest` (3) - detached-valve data, NBT round-trip and missing tags.
 
 ### Test coverage shipped with batch 6
 
-`./gradlew headlessTest` now runs 81 JUnit 5 tests. Batch 6 added:
+`./gradlew headlessTest` runs 81 JUnit 5 tests after batch 6. Batch 6 added:
 
 - `TankStructureTest` (6) — cell classification, 5×5×5/3×3×3 shell counts, non-air
   and Railcraft residual-heat interiors, inverted/null bounds.
@@ -303,8 +312,9 @@ and the GUI.
 - **Fixed (batch 4):** the valve's `getLightOpacity()` is 255 (no more light leak),
   and `getRenderBoundingBox` returns a small box for slaves and an inflated box for the
   master.
-- Remaining: `BlockTankFrame`'s fallback still renders stone (now logged), and the
-  GUI strings are still hardcoded English (batch 5).
+- **Fixed (batch 7):** GUI strings are localized, the name packet is only sent when
+  changed, Escape/unhandled keys behave correctly, and fluid/capacity reads are
+  cached. `BlockTankFrame`'s fallback still renders stone but now logs once per block.
 
 ---
 
@@ -405,8 +415,11 @@ still be a deliberate server-owner choice because frame count/memory grow with v
   frame), restoring the pre-review effective 16-wide default. 32 remains opt-in. A
   legacy `FFS.cfg` is copied to `ffs.cfg` once so existing settings survive the id
   change.
-- License is still CC BY-NC-SA 3.0 (per `LICENSE.md`), which is unusual for code (no
-  patent grant, non-commercial restriction). Consider MIT/Apache-2.0.
+- **Retained upstream license (no change):** the work remains CC BY-NC-SA 3.0 as
+  requested by the original author. `LICENSE.md` is byte-identical to upstream; do
+  not relicense it. `NOTICE.md` records attribution, the upstream source, the license
+  URI and the fact that this is a modified adaptation, and both files are included in
+  the built jar.
 - The JUnit 5 suite and `headlessTest` are now part of CI (`build` runs the tests).
 
 ---

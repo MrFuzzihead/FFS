@@ -27,6 +27,10 @@ class PackagingTest {
         String lang = read("assets/ffs/lang/en_US.lang");
         assertTrue(lang.contains("tile.blockValve.name=Tank Valve"));
         assertTrue(lang.contains("tile.blockTankFrame.name=Tank Frame"));
+        assertTrue(lang.contains("gui.ffs.auto_output"));
+        assertTrue(lang.contains("gui.ffs.valve_name"));
+        assertTrue(lang.contains("waila.ffs.head_valve"));
+        assertTrue(lang.contains("waila.ffs.fluid_line"));
 
         String sounds = read("assets/ffs/sounds.json");
         assertTrue(sounds.contains("\"fire\""));

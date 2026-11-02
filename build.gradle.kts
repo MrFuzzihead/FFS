@@ -16,6 +16,11 @@ tasks.test {
     }
 }
 
+// Ship the upstream license and the attribution/modification notice with every jar.
+tasks.jar {
+    from("LICENSE.md", "NOTICE.md")
+}
+
 // Convenience alias used by the README and by headless CI images.
 // `build` already depends on `test`; this task exists so the intent is explicit
 // and can be invoked on its own: ./gradlew headlessTest

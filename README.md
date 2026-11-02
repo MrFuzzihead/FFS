@@ -163,7 +163,7 @@ the implementation. Work is organised in review-driven batches (see
 
 - Modernised build system for 2026 (GTNH convention plugin, Gradle wrapper,
   auto-provisioned JDK, GitHub Actions CI)
-- Review document and test harness (JUnit 5 + `headlessTest`, 81 tests)
+- Review document and test harness (JUnit 5 + `headlessTest`, 87 tests)
 - Safety fixes: explosion handling, client-side container guard, NBT robustness,
   removed-mod block handling, leak-hardness crash, capacity overflow, fire config,
   `canFill` units, null-valve GUI guard
@@ -196,12 +196,17 @@ the implementation. Work is organised in review-driven batches (see
   `TankFluidHandler`, `TankHazards` and `ValveCommands` split the fluid rules,
   environment hazards and shared CC/OC semantics out of the block entity. The old
   `getBlocksBetweenPoints`/`getTankFrame` cuboid maps are gone.
+- License: upstream CC BY-NC-SA 3.0 retained, with `NOTICE.md` attribution and both
+  files included in the built jar.
+- WAILA 1.19.34: compact NBT sync, config keys, advanced tooltip and localized
+  head/body/tail sections.
+- GUI: localized strings, change-only valve-name packets, correct Escape/key
+  handling, and cached fluid/capacity reads.
 
 **Planned**
 
-- Remaining polish: license choice, i18n for GUI/WAILA strings, and optionally
-  thinning the remaining NBT/auto-output/peripheral adapter code in
-  `TileEntityValve`.
+- Remaining: thinning the NBT/auto-output/peripheral adapter code in
+  `TileEntityValve` (planned as the next batch).
 
 ## Credits
 
@@ -215,5 +220,9 @@ the implementation. Work is organised in review-driven batches (see
 
 This project is licensed under the
 [Creative Commons Attribution-NonCommercial-ShareAlike 3.0](LICENSE.md) license.
-Fancy Fluid Storage is the work of its original authors; this fork only extends and
-maintains their work for 1.7.10. See [`LICENSE.md`](LICENSE.md) for the full text.
+The upstream license is intentionally retained at the original author's request.
+Fancy Fluid Storage is the work of its original authors; this fork is a modified
+continuation for 1.7.10, and the changes are identified under
+[Changes in this fork](#changes-in-this-fork). Attribution and the upstream source
+are recorded in [NOTICE.md](NOTICE.md). See [LICENSE.md](LICENSE.md) for the full
+text.
