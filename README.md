@@ -161,7 +161,7 @@ the implementation. Work is organised in review-driven batches (see
 
 - Modernised build system for 2026 (GTNH convention plugin, Gradle wrapper,
   auto-provisioned JDK, GitHub Actions CI)
-- Review document and test harness (JUnit 5 + `headlessTest`, 53 tests)
+- Review document and test harness (JUnit 5 + `headlessTest`, 61 tests)
 - Safety fixes: explosion handling, client-side container guard, NBT robustness,
   removed-mod block handling, leak-hardness crash, capacity overflow, fire config,
   `canFill` units, null-valve GUI guard
@@ -180,11 +180,14 @@ the implementation. Work is organised in review-driven batches (see
   precipitation height is cached; and burn/leak use the world RNG
 - Networking: packets are marshalled onto the server thread and validate reach and
   valve-name length
+- Renderer/GUI: correct six-face inventory model and single-pass valve rendering with
+  an inside-face accent; no global render-pass mutation; GL state fully restored;
+  gas volumes use the same partial-column math as liquids; the GUI scissor is
+  Y-flipped and bottom-aligned; the valve no longer leaks light; and slave render
+  bounds are small
 
 **Planned**
 
-- Remaining renderer/GUI fixes (face/normal mapping, render-pass state, scissor math,
-  GL state)
 - Packaging fixes (lowercase `ffs` id and resource domain, optional dependency scopes)
 - Architecture split of the 1,415-line `TileEntityValve` and the transient cuboid scan
 

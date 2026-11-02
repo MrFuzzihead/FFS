@@ -1,41 +1,43 @@
 package com.lordmau5.ffs.client;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import net.minecraft.block.Block;
 import net.minecraft.client.renderer.RenderBlocks;
-import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.init.Blocks;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.client.MinecraftForgeClient;
 
+import org.apache.logging.log4j.Level;
+
 import com.lordmau5.ffs.tile.TileEntityTankFrame;
 
 import cpw.mods.fml.client.registry.ISimpleBlockRenderingHandler;
 import cpw.mods.fml.client.registry.RenderingRegistry;
+import cpw.mods.fml.common.FMLLog;
 
 public class TankFrameRenderer implements ISimpleBlockRenderingHandler {
 
     public static final int id = RenderingRegistry.getNextAvailableRenderId();
 
+    private final Set<Block> failedBlocks = new HashSet<>();
     private FrameBlockAccessWrapper wrapper;
     private IBlockAccess wrapperBase;
 
     public void renderInventoryBlock(Block block, int metadata, int modelId, RenderBlocks renderer) {}
 
-    public static int getPassForFrameRender(RenderBlocks rb) {
+    public static int getPassForFrameRender() {
         return MinecraftForgeClient.getRenderPass();
     }
 
     public boolean renderWorldBlock(IBlockAccess world, int x, int y, int z, Block block, int modelId,
         RenderBlocks renderer) {
-        return this.renderWorldBlock(world, x, y, z, block, renderer, getPassForFrameRender(renderer));
+        return this.renderWorldBlock(world, x, y, z, block, renderer, getPassForFrameRender());
     }
 
     public boolean renderWorldBlock(IBlockAccess ba, int x, int y, int z, Block block, RenderBlocks rb, int pass) {
-        Tessellator.instance.addVertexWithUV(x, y, z, 0.0, 0.0);
-        Tessellator.instance.addVertexWithUV(x, y, z, 0.0, 0.0);
-        Tessellator.instance.addVertexWithUV(x, y, z, 0.0, 0.0);
-        Tessellator.instance.addVertexWithUV(x, y, z, 0.0, 0.0);
         TileEntity tile = ba.getTileEntity(x, y, z);
         if (!(tile instanceof TileEntityTankFrame)) {
             return false;
@@ -66,7 +68,11 @@ public class TankFrameRenderer implements ISimpleBlockRenderingHandler {
 
                     try {
                         rb.renderBlockByRenderType(renderBlock, x, y, z);
-                    } catch (Exception var15) {
+                    } catch (Exception e) {
+                        rb.blockAccess = origBa;
+                        if (this.failedBlocks.add(renderBlock)) {
+                            FMLLog.log(Level.WARN, e, "FFS: failed to render tank frame block %s", renderBlock);
+                        }
                         rb.renderStandardBlock(Blocks.stone, x, y, z);
                     }
                 }

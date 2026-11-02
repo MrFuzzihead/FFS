@@ -183,14 +183,14 @@ public class GuiValve extends GuiScreen {
             this.mc.getTextureManager()
                 .bindTexture(FluidHelper.BLOCK_TEXTURE);
             int height = (int) Math.ceil((float) this.valve.getFluidAmount() / this.valve.getCapacity() * 101.0F);
+            height = Math.max(0, Math.min(101, height));
+
             ScaledResolution r = new ScaledResolution(this.mc, this.mc.displayWidth, this.mc.displayHeight);
             int sc = r.getScaleFactor();
-            GL11.glScissor(
-                (x + 10) * sc,
-                (y + 10 - this.mc.gameSettings.guiScale) * sc - sc,
-                64 * sc,
-                (height + this.mc.gameSettings.guiScale + 1) * sc + sc % 2 - 1);
-            GL11.glEnable(3089);
+            int fluidTop = y + 10 + 101 - height;
+            int[] scissor = GuiScissor.scissorFor(x + 10, fluidTop, 64, height, sc, this.mc.displayHeight);
+            GL11.glEnable(GL11.GL_SCISSOR_TEST);
+            GL11.glScissor(scissor[0], scissor[1], scissor[2], scissor[3]);
 
             for (int iX = 0; iX < 4; iX++) {
                 for (int iY = 7; iY > 0; iY--) {
@@ -198,7 +198,7 @@ public class GuiValve extends GuiScreen {
                 }
             }
 
-            GL11.glDisable(3089);
+            GL11.glDisable(GL11.GL_SCISSOR_TEST);
         }
     }
 }

@@ -26,13 +26,23 @@ The harness is:
 | 1 | P0 safety fixes: explosions, client-side containers, NBT, null blocks, leak crash, capacity overflow, fire config, `canFill` units, GUI null | done |
 | 2 | P1 correctness: tank ownership (shared walls/edge valves/stale slaves), `breakTank` fluid, auto-output per tank, interior invalidation, geometry (`length[]` reset, MAX_SIZE), fluid-handler contract, rain/negative density, RiM rotation, CC equality | done |
 | 3 | P2 performance: frame ticking, packet storm, master/fluid caches, retained-map removal (LongSet), renderer bottom-face fix + wrapper reuse, precipitation cache, RNG reuse, server-thread packet queue/validation | done |
-| 4 | Renderer/GUI: face/normal fixes, render-pass global hack, scissor math, GL state restore, bounding boxes, lighting | planned |
+| 4 | Renderer/GUI: face/normal fixes, render-pass global hack, scissor math, GL state restore, bounding boxes, lighting | done |
 | 5 | Build/packaging: `ffs` casing, resource domain, `mcmod.info`, optional dependency scopes, TE registry names, tests in CI | planned |
 | 6 | Architecture: split `TileEntityValve` into structure/fluid/hazards/peripheral classes; shared CC/OC command layer | planned |
 
+### Test coverage shipped with batch 4
+
+`./gradlew headlessTest` now runs 61 JUnit 5 tests. Batch 4 added:
+
+- `FluidRenderMathTest` (4) — fill clamping, interior column height, visible layer
+  count, layer heights (including the 0.01 minimum bottom layer).
+- `GuiScissorTest` (3) — Y-flip into framebuffer coordinates, scale clamping, negative
+  dimensions.
+- `ValveFaceTest` (1) — only the inside face receives the accent texture.
+
 ### Test coverage shipped with batch 3
 
-`./gradlew headlessTest` now runs 53 JUnit 5 tests. Batch 3 added:
+`./gradlew headlessTest` runs 53 JUnit 5 tests after batch 3. Batch 3 added:
 
 - `LongSetTest` (5) — add/contains/duplicates, resize, signed coordinate packing.
 - `PacketValidationTest` (2) — reach boundary and valve-name length rules.
@@ -249,22 +259,30 @@ and the GUI.
   touching the world. OC `invoke` still returns `null` for unknown methods.
 
 ### Rendering
-- `ValveRenderer.renderInventoryBlock` uses mismatched face methods (bottom twice,
-  missing west, wrong normals); `renderWorldBlock` duplicates/`mixes` faces
-  (`YNeg` twice, `YPos`+`ZNeg` for Z, `ZPos`+`XPos` for X).
-- `ForgeHooksClient.setRenderPass(pass)` inside `canRenderInPass` mutates global state
-  during chunk meshing; remove it and read `MinecraftForgeClient.getRenderPass()`.
-- Degenerate `addVertexWithUV` calls pollute the chunk buffer; remove.
-- `preGL`/`postGL` only save `GL_ENABLE_BIT`; blend/color/depth/texture state leaks.
-- Negative-density alpha is set after the vertices are added.
-- GUI scissor mixes `getScaleFactor()` with `gameSettings.guiScale` and does not flip
-  Y; wrong for auto GUI scale.
-- `TankFrameRenderer` allocated a wrapper per block per pass; **fixed (batch 3)** — the
-  stateless wrapper is reused. It still silently renders stone on exceptions; log them.
-- `BlockValve.isOpaqueCube() == false` gives the valve `lightOpacity = 0` (light
-  leaks through a solid metal block).
-- `getRenderBoundingBox` returns the huge tank AABB for slaves too; return a small box
-  for non-masters and inflate the master's by 1.
+- **Fixed (batch 4):** `ValveRenderer.renderInventoryBlock` used mismatched face
+  methods (bottom twice, missing west, wrong normals). It now renders all six faces
+  with the matching `renderFace*` method and normal.
+- **Fixed (batch 4):** `renderWorldBlock` duplicated/mixed faces and z-fought. The
+  block is rendered once; `BlockValve.getIcon` supplies the master/slave accent for
+  the inside face and the base texture for the other faces.
+- **Fixed (batch 4):** `ForgeHooksClient.setRenderPass(pass)` inside
+  `canRenderInPass` was removed; the valve renders only in pass 0, and the frame
+  renderer reads the pass that `EntityRenderer` already sets.
+- **Fixed (batch 4):** degenerate `addVertexWithUV` calls were removed from both
+  renderers.
+- **Fixed (batch 4):** `preGL`/`postGL` now save/restore `GL_ALL_ATTRIB_BITS`, and the
+  gas alpha is set before drawing.
+- **Fixed (batch 4):** negative-density fluids use the same partial-column math as
+  normal fluids (no more full-volume draw).
+- **Fixed (batch 4):** GUI scissor uses `GuiScissor` (correct Y flip, output scale,
+  bottom-aligned fill) instead of mixing `getScaleFactor()` with `gameSettings.guiScale`.
+- **Fixed (batch 3):** the tank-frame wrapper is reused; **fixed (batch 4):** renderer
+  exceptions are logged once per failing block instead of failing silently.
+- **Fixed (batch 4):** the valve's `getLightOpacity()` is 255 (no more light leak),
+  and `getRenderBoundingBox` returns a small box for slaves and an inflated box for the
+  master.
+- Remaining: `BlockTankFrame`'s fallback still renders stone (now logged), and the
+  GUI strings are still hardcoded English (batch 5).
 
 ---
 

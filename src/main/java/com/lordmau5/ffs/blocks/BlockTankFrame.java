@@ -17,7 +17,6 @@ import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.world.Explosion;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
-import net.minecraftforge.client.ForgeHooksClient;
 import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.event.ForgeEventFactory;
 
@@ -130,7 +129,8 @@ public class BlockTankFrame extends Block implements IFacade {
     }
 
     public boolean canRenderInPass(int pass) {
-        ForgeHooksClient.setRenderPass(pass);
+        // The stored block decides its own pass inside the renderer. Do not mutate
+        // Forge's global render-pass state here; EntityRenderer already sets it.
         return true;
     }
 

@@ -10,13 +10,14 @@ import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.IIcon;
 import net.minecraft.world.Explosion;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
-import net.minecraftforge.client.ForgeHooksClient;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import com.lordmau5.ffs.FancyFluidStorage;
+import com.lordmau5.ffs.client.ValveFace;
 import com.lordmau5.ffs.client.ValveRenderer;
 import com.lordmau5.ffs.tile.TileEntityValve;
 import com.lordmau5.ffs.util.GenericUtil;
@@ -46,6 +47,27 @@ public class BlockValve extends Block {
     public void registerBlockIcons(IIconRegister iR) {
         super.registerBlockIcons(iR);
         FancyFluidStorage.proxy.registerIcons(iR);
+    }
+
+    @SideOnly(Side.CLIENT)
+    @Override
+    public IIcon getIcon(IBlockAccess world, int x, int y, int z, int side) {
+        TileEntity tile = world.getTileEntity(x, y, z);
+        if (tile instanceof TileEntityValve) {
+            TileEntityValve valve = (TileEntityValve) tile;
+            boolean master = valve.isMaster();
+            if (!valve.isValid()) {
+                return master ? FancyFluidStorage.proxy.tex_MasterValve[0] : FancyFluidStorage.proxy.tex_SlaveValve[0];
+            }
+
+            if (ValveFace.isActiveFace(valve.getInside(), side)) {
+                return master ? FancyFluidStorage.proxy.tex_MasterValve[1] : FancyFluidStorage.proxy.tex_SlaveValve[1];
+            }
+
+            return FancyFluidStorage.proxy.tex_Valve;
+        }
+
+        return super.getIcon(world, x, y, z, side);
     }
 
     public void onBlockExploded(World world, int x, int y, int z, Explosion explosion) {
@@ -126,13 +148,15 @@ public class BlockValve extends Block {
         return ValveRenderer.id;
     }
 
-    public boolean canRenderInPass(int pass) {
-        ForgeHooksClient.setRenderPass(pass);
-        return true;
-    }
-
     public int getRenderBlockPass() {
         return 0;
+    }
+
+    @Override
+    public int getLightOpacity() {
+        // The valve is a solid metal cube; without this the constructor's
+        // isOpaqueCube()==false leaves lightOpacity at 0 and light leaks through.
+        return 255;
     }
 
     public boolean renderAsNormalBlock() {

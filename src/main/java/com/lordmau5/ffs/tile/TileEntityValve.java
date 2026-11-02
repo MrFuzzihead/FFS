@@ -1137,13 +1137,17 @@ public class TileEntityValve extends TileEntity
     }
 
     public AxisAlignedBB getRenderBoundingBox() {
-        return this.bottomDiagFrame != null && this.topDiagFrame != null ? AxisAlignedBB.getBoundingBox(
+        if (!this.isMaster() || this.bottomDiagFrame == null || this.topDiagFrame == null) {
+            return super.getRenderBoundingBox();
+        }
+
+        return AxisAlignedBB.getBoundingBox(
             this.bottomDiagFrame.getX(),
             this.bottomDiagFrame.getY(),
             this.bottomDiagFrame.getZ(),
-            this.topDiagFrame.getX(),
-            this.topDiagFrame.getY(),
-            this.topDiagFrame.getZ()) : super.getRenderBoundingBox();
+            this.topDiagFrame.getX() + 1,
+            this.topDiagFrame.getY() + 1,
+            this.topDiagFrame.getZ() + 1);
     }
 
     public int getFluidLuminosity() {
