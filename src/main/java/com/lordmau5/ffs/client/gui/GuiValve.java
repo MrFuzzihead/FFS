@@ -40,6 +40,9 @@ public class GuiValve extends GuiScreen {
 
     public void initGui() {
         super.initGui();
+        if (this.valve == null) {
+            return;
+        }
         this.left = (this.width - this.xSize) / 2;
         this.top = (this.height - this.ySize) / 2;
         if (!this.isFrame) {
@@ -59,6 +62,10 @@ public class GuiValve extends GuiScreen {
 
     public void onGuiClosed() {
         super.onGuiClosed();
+        if (this.valve == null) {
+            return;
+        }
+
         if (!this.isFrame && !this.valveName.getText()
             .isEmpty()) {
             NetworkHandler
@@ -67,6 +74,11 @@ public class GuiValve extends GuiScreen {
     }
 
     protected void keyTyped(char keyChar, int keyCode) {
+        if (this.valve == null) {
+            super.keyTyped(keyChar, keyCode);
+            return;
+        }
+
         if (!this.isFrame && this.valveName.isFocused()) {
             this.valveName.textboxKeyTyped(keyChar, keyCode);
         } else {
@@ -79,6 +91,10 @@ public class GuiValve extends GuiScreen {
 
     protected void mouseClicked(int p_73864_1_, int p_73864_2_, int p_73864_3_) {
         super.mouseClicked(p_73864_1_, p_73864_2_, p_73864_3_);
+        if (this.valve == null) {
+            return;
+        }
+
         if (!this.isFrame) {
             this.valveName.mouseClicked(p_73864_1_, p_73864_2_, p_73864_3_);
         }
@@ -89,6 +105,11 @@ public class GuiValve extends GuiScreen {
     }
 
     public void drawScreen(int x, int y, float partialTicks) {
+        if (this.valve == null) {
+            super.drawScreen(x, y, partialTicks);
+            return;
+        }
+
         this.mouseX = x;
         this.mouseY = y;
         GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
@@ -141,6 +162,10 @@ public class GuiValve extends GuiScreen {
     }
 
     public void actionPerformed(GuiButton btn) {
+        if (this.valve == null) {
+            return;
+        }
+
         if (btn.id == 23442 && btn instanceof GuiToggle) {
             GuiToggle toggle = (GuiToggle) btn;
             this.valve.setAutoOutput(toggle.getState());

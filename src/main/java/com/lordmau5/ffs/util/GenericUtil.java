@@ -48,8 +48,7 @@ public class GenericUtil {
     }
 
     public static boolean canAutoOutput(float height, int tankHeight, int valvePosition, boolean negativeDensity) {
-        height *= tankHeight;
-        return negativeDensity ? false : height > valvePosition - 0.5F;
+        return TankMath.canAutoOutput(height, tankHeight, valvePosition, negativeDensity);
     }
 
     public static boolean isBlockGlass(Block block, int metadata) {
@@ -79,6 +78,9 @@ public class GenericUtil {
 
     public static boolean areTankBlocksValid(ExtendedBlock bottomBlock, ExtendedBlock topBlock, World world,
         Position3D bottomPos) {
+        if (bottomBlock == null || topBlock == null) {
+            return false;
+        }
         if (!isValidTankBlock(world, bottomPos, bottomBlock)) {
             return false;
         } else {
@@ -96,6 +98,10 @@ public class GenericUtil {
     }
 
     public static boolean isTileEntityAcceptable(Block block, TileEntity tile) {
+        if (block == null || validTiles == null) {
+            return false;
+        }
+
         for (String name : validTiles) {
             if (block.getUnlocalizedName()
                 .toLowerCase()
@@ -108,6 +114,10 @@ public class GenericUtil {
     }
 
     public static boolean isValidTankBlock(World world, Position3D pos, ExtendedBlock extendedBlock) {
+        if (extendedBlock == null || extendedBlock.getBlock() == null) {
+            return false;
+        }
+
         Block block = extendedBlock.getBlock();
         if (block.hasTileEntity(extendedBlock.getMetadata())) {
             TileEntity tile = world.getTileEntity(pos.getX(), pos.getY(), pos.getZ());
@@ -131,6 +141,10 @@ public class GenericUtil {
     }
 
     public static boolean canBlockLeak(Block block) {
+        if (block == null) {
+            return false;
+        }
+
         Material mat = block.getMaterial();
         return mat.equals(Material.grass) || mat.equals(Material.sponge)
             || mat.equals(Material.cloth)
@@ -146,6 +160,12 @@ public class GenericUtil {
 
     public static boolean fluidContainerHandler(World world, int x, int y, int z, TileEntityValve valve,
         EntityPlayer player) {
+        // onBlockActivated is invoked on the client as well; all inventory and tank
+        // mutations must happen on the server only (the server syncs the result).
+        if (world.isRemote) {
+            return true;
+        }
+
         ItemStack current = player.inventory.getCurrentItem();
         if (current == null) {
             return false;

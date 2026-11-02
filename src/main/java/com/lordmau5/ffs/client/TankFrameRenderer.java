@@ -40,13 +40,10 @@ public class TankFrameRenderer implements ISimpleBlockRenderingHandler {
             boolean invalidRender = true;
             Block renderBlock = Blocks.stone;
             TileEntityTankFrame te = (TileEntityTankFrame) tile;
-            if (te.getBlock() != null) {
-                Block exBlock = te.getBlock()
-                    .getBlock();
-                if (exBlock != null) {
-                    renderBlock = exBlock;
-                    invalidRender = false;
-                }
+            Block exBlock = te.getStoredBlock();
+            if (exBlock != null) {
+                renderBlock = exBlock;
+                invalidRender = false;
             }
 
             IBlockAccess origBa = rb.blockAccess;

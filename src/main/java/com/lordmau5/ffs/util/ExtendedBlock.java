@@ -20,33 +20,38 @@ public class ExtendedBlock {
         return this.metadata;
     }
 
+    public boolean hasBlock() {
+        return this.block != null;
+    }
+
     @Override
     public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
         if (!(obj instanceof ExtendedBlock)) {
             return false;
-        } else {
-            ExtendedBlock other = (ExtendedBlock) obj;
-            return other.getBlock()
-                .getUnlocalizedName()
-                .equals(
-                    this.getBlock()
-                        .getUnlocalizedName())
-                && other.getMetadata() == this.getMetadata();
         }
+
+        ExtendedBlock other = (ExtendedBlock) obj;
+        if (this.block == null || other.block == null) {
+            return false;
+        }
+
+        return this.block == other.block && other.metadata == this.metadata;
     }
 
     public boolean equalsIgnoreMetadata(ExtendedBlock block) {
-        return block.getBlock()
-            .getUnlocalizedName()
-            .equals(
-                this.getBlock()
-                    .getUnlocalizedName());
+        return this.block != null && block != null && block.block != null && block.block == this.block;
+    }
+
+    @Override
+    public int hashCode() {
+        return 31 * System.identityHashCode(this.block) + this.metadata;
     }
 
     @Override
     public String toString() {
-        return this.getBlock()
-            .getUnlocalizedName() + ":"
-            + this.getMetadata();
+        return (this.block == null ? "null" : this.block.getUnlocalizedName()) + ":" + this.metadata;
     }
 }

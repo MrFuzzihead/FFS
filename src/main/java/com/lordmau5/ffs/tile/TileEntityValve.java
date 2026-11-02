@@ -15,7 +15,6 @@ import net.minecraft.network.Packet;
 import net.minecraft.network.play.server.S35PacketUpdateTileEntity;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.AxisAlignedBB;
-import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.util.ForgeDirection;
@@ -30,7 +29,9 @@ import com.lordmau5.ffs.FancyFluidStorage;
 import com.lordmau5.ffs.blocks.BlockTankFrame;
 import com.lordmau5.ffs.util.ExtendedBlock;
 import com.lordmau5.ffs.util.GenericUtil;
+import com.lordmau5.ffs.util.NbtHelper;
 import com.lordmau5.ffs.util.Position3D;
+import com.lordmau5.ffs.util.TankMath;
 import com.rwtema.funkylocomotion.api.IMoveCheck;
 
 import buildcraft.api.transport.IPipeConnection;
@@ -201,7 +202,8 @@ public class TileEntityValve extends TileEntity
                     }
 
                     if (this.isMaster()) {
-                        if (this.minBurnableTemp > 0 && this.fluidTemperature >= this.minBurnableTemp
+                        if (FancyFluidStorage.instance.SET_WORLD_ON_FIRE && this.minBurnableTemp > 0
+                            && this.fluidTemperature >= this.minBurnableTemp
                             && this.frameBurnability > 0
                             && this.randomBurnTicks-- <= 0) {
                             this.randomBurnTicks = 100;
@@ -244,14 +246,13 @@ public class TileEntityValve extends TileEntity
                                     while (ix < 3 && remainingFrames.size() != 0) {
                                         int id = random.nextInt(remainingFrames.size());
                                         TileEntityTankFrame frame = remainingFrames.get(id);
-                                        if (frame.getBlock()
-                                            .getBlock()
-                                            .isFlammable(
-                                                this.worldObj,
-                                                frame.xCoord,
-                                                frame.yCoord,
-                                                frame.zCoord,
-                                                ForgeDirection.UNKNOWN)) {
+                                        Block frameBlock = frame.getStoredBlock();
+                                        if (frameBlock != null && frameBlock.isFlammable(
+                                            this.worldObj,
+                                            frame.xCoord,
+                                            frame.yCoord,
+                                            frame.zCoord,
+                                            ForgeDirection.UNKNOWN)) {
                                             firePos.add(new Position3D(frame.xCoord, frame.yCoord, frame.zCoord));
                                             ix++;
                                         } else {
@@ -300,15 +301,18 @@ public class TileEntityValve extends TileEntity
                             while (ix < amt && remainingFrames.size() != 0) {
                                 int id = random.nextInt(remainingFrames.size());
                                 TileEntityTankFrame frame = remainingFrames.get(id);
-                                Block block = frame.getBlock()
-                                    .getBlock();
-                                if (GenericUtil.canBlockLeak(block)
+                                Block block = frame.getStoredBlock();
+                                if (block != null && GenericUtil.canBlockLeak(block)
                                     && !frame.getNeighborBlockOrAir(
                                         this.fluidStack.getFluid()
                                             .getBlock())
                                         .isEmpty()
-                                    && block.getBlockHardness(this.worldObj, frame.xCoord, frame.yCoord, frame.zCoord)
-                                        <= 1.0F) {
+                                    && TankMath.isValidLeakHardness(
+                                        block.getBlockHardness(
+                                            this.worldObj,
+                                            frame.xCoord,
+                                            frame.yCoord,
+                                            frame.zCoord))) {
                                     validFrames.add(frame);
                                     ix++;
                                 } else {
@@ -317,11 +321,13 @@ public class TileEntityValve extends TileEntity
                             }
 
                             for (TileEntityTankFrame frame : validFrames) {
-                                Block block = frame.getBlock()
-                                    .getBlock();
-                                int hardness = (int) Math.ceil(
-                                    block.getBlockHardness(this.worldObj, frame.xCoord, frame.yCoord, frame.zCoord)
-                                        * 100.0F);
+                                Block block = frame.getStoredBlock();
+                                if (block == null) {
+                                    continue;
+                                }
+
+                                int hardness = TankMath.leakHardnessTicks(
+                                    block.getBlockHardness(this.worldObj, frame.xCoord, frame.yCoord, frame.zCoord));
                                 int rand = random.nextInt(hardness) + 1;
                                 int diff = (int) Math
                                     .ceil(50.0F * ((float) this.getFluidAmount() / this.getCapacity()));
@@ -427,7 +433,12 @@ public class TileEntityValve extends TileEntity
     }
 
     public int getTankHeight() {
-        return this.isMaster() ? this.tankHeight : this.getMaster().tankHeight;
+        if (this.isMaster()) {
+            return this.tankHeight;
+        }
+
+        TileEntityValve master = this.getMaster();
+        return master == null ? 0 : master.tankHeight;
     }
 
     public void setInside(ForgeDirection inside) {
@@ -572,7 +583,11 @@ public class TileEntityValve extends TileEntity
             TileEntity tile = this.worldObj
                 .getTileEntity(this.bottomDiagFrame.getX(), this.bottomDiagFrame.getY(), this.bottomDiagFrame.getZ());
             if (tile != null && tile instanceof TileEntityTankFrame) {
-                bottomDiagBlock = ((TileEntityTankFrame) tile).getBlock();
+                ExtendedBlock stored = ((TileEntityTankFrame) tile).getBlock();
+                if (stored == null || !stored.hasBlock()) {
+                    return false;
+                }
+                bottomDiagBlock = stored;
             }
         }
 
@@ -580,8 +595,20 @@ public class TileEntityValve extends TileEntity
             TileEntity tile = this.worldObj
                 .getTileEntity(this.topDiagFrame.getX(), this.topDiagFrame.getY(), this.topDiagFrame.getZ());
             if (tile != null && tile instanceof TileEntityTankFrame) {
-                topDiagBlock = ((TileEntityTankFrame) tile).getBlock();
+                ExtendedBlock stored = ((TileEntityTankFrame) tile).getBlock();
+                if (stored == null || !stored.hasBlock()) {
+                    return false;
+                }
+                topDiagBlock = stored;
             }
+        }
+
+        if (bottomDiagBlock == null || topDiagBlock == null
+            || !bottomDiagBlock.hasBlock()
+            || !topDiagBlock.hasBlock()) {
+            // A frame whose original block was removed from the pack; refuse to
+            // rebuild instead of dereferencing a null block.
+            return false;
         }
 
         if (!GenericUtil.isValidTankBlock(this.worldObj, this.bottomDiagFrame, bottomDiagBlock)) {
@@ -600,16 +627,20 @@ public class TileEntityValve extends TileEntity
                     }
                 }
 
-                if (FancyFluidStorage.instance.INSIDE_CAPACITY) {
-                    this.fluidCapacity = this.maps[2].size() * this.mbPerVirtualTank;
-                } else {
-                    this.fluidCapacity = (this.maps[0].size() + this.maps[1].size() + this.maps[2].size())
-                        * this.mbPerVirtualTank;
-                }
+                this.fluidCapacity = TankMath.capacityInt(
+                    FancyFluidStorage.instance.INSIDE_CAPACITY,
+                    this.maps[0].size(),
+                    this.maps[1].size(),
+                    this.maps[2].size(),
+                    this.mbPerVirtualTank);
 
                 for (Entry<Position3D, ExtendedBlock> frameCheck : this.maps[0].entrySet()) {
                     Position3D fPos = frameCheck.getKey();
                     ExtendedBlock fBlock = frameCheck.getValue();
+                    if (!fBlock.hasBlock()) {
+                        return false;
+                    }
+
                     int burnability = fBlock.getBlock()
                         .getFlammability(this.worldObj, fPos.getX(), fPos.getY(), fPos.getZ(), ForgeDirection.UNKNOWN);
                     if (burnability > this.frameBurnability) {
@@ -621,6 +652,10 @@ public class TileEntityValve extends TileEntity
                         if (tile != null && tile instanceof TileEntityTankFrame) {
                             fBlock = ((TileEntityTankFrame) tile).getBlock();
                         }
+                    }
+
+                    if (fBlock == null || !fBlock.hasBlock()) {
+                        return false;
                     }
 
                     if (!GenericUtil.areTankBlocksValid(fBlock, bottomDiagBlock, this.worldObj, fPos)) {
@@ -664,6 +699,9 @@ public class TileEntityValve extends TileEntity
 
                 if (this.fluidStack != null) {
                     this.fluidStack.amount = Math.min(this.fluidStack.amount, this.fluidCapacity);
+                    if (this.fluidStack.amount <= 0) {
+                        this.fluidStack = null;
+                    }
                 }
 
                 for (TileEntityValve valve : valves) {
@@ -758,10 +796,13 @@ public class TileEntityValve extends TileEntity
                         .breakTank(frame);
                 }
             } else {
+                // Capture the fluid before invalidating: getFluid() returns null once
+                // isValid is false, which silently destroyed the hand-off.
+                FluidStack fluid = this.fluidStack;
                 this.setValid(false);
 
                 for (TileEntityValve valve : this.otherValves) {
-                    valve.fluidStack = this.getFluid();
+                    valve.fluidStack = fluid;
                     valve.updateFluidTemperature();
                     valve.master = null;
                     valve.setValid(false);
@@ -877,27 +918,19 @@ public class TileEntityValve extends TileEntity
         this.inside = ForgeDirection.getOrientation(tag.getInteger("inside"));
         this.isMaster = tag.getBoolean("master");
         if (this.isMaster()) {
-            if (tag.getBoolean("hasFluid")) {
-                if (tag.hasKey("fluidID")) {
-                    this.fluidStack = new FluidStack(
-                        FluidRegistry.getFluid(tag.getInteger("fluidID")),
-                        tag.getInteger("fluidAmount"));
-                } else if (tag.hasKey("fluidName")) {
-                    this.fluidStack = new FluidStack(
-                        FluidRegistry.getFluid(tag.getString("fluidName")),
-                        tag.getInteger("fluidAmount"));
-                }
+            this.tankHeight = Math.max(0, tag.getInteger("tankHeight"));
+            this.fluidCapacity = Math.max(0, tag.getInteger("fluidCapacity"));
 
-                this.updateFluidTemperature();
-            } else {
-                this.fluidStack = null;
+            FluidStack loaded = NbtHelper.readFluidStack(tag, NbtHelper.FLUID_TAG, this.fluidCapacity);
+            if (loaded == null && (tag.hasKey("fluidName") || tag.hasKey("fluidID"))) {
+                loaded = NbtHelper.readLegacyFluid(tag, "fluidName", "fluidID", "fluidAmount", this.fluidCapacity);
             }
-
-            this.tankHeight = tag.getInteger("tankHeight");
-            this.fluidCapacity = tag.getInteger("fluidCapacity");
-        } else if (this.getMaster() == null && tag.hasKey("masterValve")) {
-            int[] masterValveP = tag.getIntArray("masterValve");
-            this.setMasterPos(new Position3D(masterValveP[0], masterValveP[1], masterValveP[2]));
+            this.fluidStack = loaded;
+            this.updateFluidTemperature();
+        } else {
+            // Always re-read the link. The old code skipped this when a master was
+            // already cached, so client S35 packets could never re-point a valve.
+            this.setMasterPos(NbtHelper.readPosition(tag, "masterValve"));
         }
 
         this.autoOutput = tag.getBoolean("autoOutput");
@@ -908,10 +941,12 @@ public class TileEntityValve extends TileEntity
         }
 
         if (tag.hasKey("bottomDiagF")) {
-            int[] bottomDiagF = tag.getIntArray("bottomDiagF");
-            int[] topDiagF = tag.getIntArray("topDiagF");
-            this.bottomDiagFrame = new Position3D(bottomDiagF[0], bottomDiagF[1], bottomDiagF[2]);
-            this.topDiagFrame = new Position3D(topDiagF[0], topDiagF[1], topDiagF[2]);
+            this.bottomDiagFrame = NbtHelper.readPosition(tag, "bottomDiagF");
+            this.topDiagFrame = NbtHelper.readPosition(tag, "topDiagF");
+            if (this.bottomDiagFrame == null || this.topDiagFrame == null) {
+                this.bottomDiagFrame = null;
+                this.topDiagFrame = null;
+            }
         }
     }
 
@@ -920,17 +955,27 @@ public class TileEntityValve extends TileEntity
         tag.setInteger("inside", this.inside.ordinal());
         tag.setBoolean("master", this.isMaster());
         if (this.isMaster()) {
+            String fluidName = this.fluidStack == null ? null : FluidRegistry.getFluidName(this.fluidStack);
             tag.setBoolean("hasFluid", this.fluidStack != null);
-            if (this.fluidStack != null) {
-                tag.setString("fluidName", FluidRegistry.getFluidName(this.fluidStack));
+            if (fluidName != null) {
+                tag.setString("fluidName", fluidName);
                 tag.setInteger("fluidAmount", this.fluidStack.amount);
             }
+            NbtHelper.writeFluidStack(tag, NbtHelper.FLUID_TAG, this.fluidStack);
 
             tag.setInteger("tankHeight", this.tankHeight);
             tag.setInteger("fluidCapacity", this.fluidCapacity);
-        } else if (this.getMaster() != null) {
-            int[] masterPos = new int[] { this.getMaster().xCoord, this.getMaster().yCoord, this.getMaster().zCoord };
-            tag.setIntArray("masterValve", masterPos);
+        } else {
+            // Persist the link even when the master chunk is unloaded; resolving the
+            // TE here can force a chunk load during a save.
+            Position3D master = this.masterValvePos;
+            if (master == null) {
+                TileEntityValve resolved = this.getMaster();
+                if (resolved != null) {
+                    master = new Position3D(resolved.xCoord, resolved.yCoord, resolved.zCoord);
+                }
+            }
+            NbtHelper.writePosition(tag, "masterValve", master);
         }
 
         tag.setBoolean("autoOutput", this.autoOutput);
@@ -939,14 +984,8 @@ public class TileEntityValve extends TileEntity
             tag.setString("valveName", this.getValveName());
         }
 
-        if (this.bottomDiagFrame != null && this.topDiagFrame != null) {
-            tag.setIntArray(
-                "bottomDiagF",
-                new int[] { this.bottomDiagFrame.getX(), this.bottomDiagFrame.getY(), this.bottomDiagFrame.getZ() });
-            tag.setIntArray(
-                "topDiagF",
-                new int[] { this.topDiagFrame.getX(), this.topDiagFrame.getY(), this.topDiagFrame.getZ() });
-        }
+        NbtHelper.writePosition(tag, "bottomDiagF", this.bottomDiagFrame);
+        NbtHelper.writePosition(tag, "topDiagF", this.topDiagFrame);
 
         super.writeToNBT(tag);
     }
@@ -1016,6 +1055,10 @@ public class TileEntityValve extends TileEntity
     }
 
     public int fill(FluidStack resource, boolean doFill) {
+        if (resource == null || resource.getFluid() == null || resource.amount <= 0) {
+            return 0;
+        }
+
         if (this.getMaster() != this) {
             return this.getMaster()
                 .fill(resource, doFill);
@@ -1065,6 +1108,10 @@ public class TileEntityValve extends TileEntity
     }
 
     public FluidStack drain(int maxDrain, boolean doDrain) {
+        if (maxDrain <= 0) {
+            return null;
+        }
+
         if (this.getMaster() == this) {
             if (this.isValid() && this.fluidStack != null) {
                 int drained = maxDrain;
@@ -1096,10 +1143,14 @@ public class TileEntityValve extends TileEntity
     }
 
     public double getFillPercentage() {
-        return this.getFluid() == null ? 0.0 : Math.floor((double) this.getFluidAmount() / this.getCapacity() * 100.0);
+        return TankMath.fillPercentage(this.getFluidAmount(), this.getCapacity());
     }
 
     public int fillFromContainer(ForgeDirection from, FluidStack resource, boolean doFill) {
+        if (resource == null || resource.getFluid() == null) {
+            return 0;
+        }
+
         if (!this.canFillIncludingContainers(from, resource.getFluid())) {
             return 0;
         } else {
@@ -1110,6 +1161,10 @@ public class TileEntityValve extends TileEntity
     }
 
     public int fill(ForgeDirection from, FluidStack resource, boolean doFill) {
+        if (resource == null || resource.getFluid() == null) {
+            return 0;
+        }
+
         if (!this.canFill(from, resource.getFluid())) {
             return 0;
         } else {
@@ -1120,6 +1175,15 @@ public class TileEntityValve extends TileEntity
     }
 
     public FluidStack drain(ForgeDirection from, FluidStack resource, boolean doDrain) {
+        if (resource == null || resource.getFluid() == null) {
+            return null;
+        }
+
+        FluidStack stored = this.getFluid();
+        if (stored == null || !stored.isFluidEqual(resource)) {
+            return null;
+        }
+
         return this.getMaster() == this ? this.drain(resource.amount, doDrain)
             : this.getMaster()
                 .drain(resource.amount, doDrain);
@@ -1132,7 +1196,7 @@ public class TileEntityValve extends TileEntity
     }
 
     public boolean canFillIncludingContainers(ForgeDirection from, Fluid fluid) {
-        if (!this.isValid()) {
+        if (fluid == null || !this.isValid()) {
             return false;
         } else if (this.getFluid() != null && this.getFluid()
             .getFluid() != fluid) {
@@ -1159,13 +1223,19 @@ public class TileEntityValve extends TileEntity
     }
 
     public boolean canFill(ForgeDirection from, Fluid fluid) {
-        return !this.canFillIncludingContainers(from, fluid) ? false
-            : !this.getAutoOutput() || this.valveHeightPosition > this.getTankHeight()
-                || this.valveHeightPosition + 0.5F >= this.getTankHeight() * this.getFillPercentage();
+        if (!this.canFillIncludingContainers(from, fluid)) {
+            return false;
+        }
+
+        return TankMath.canFillFromHeight(
+            this.valveHeightPosition,
+            this.getTankHeight(),
+            TankMath.fillFraction(this.getFluidAmount(), this.getCapacity()),
+            this.getAutoOutput());
     }
 
     public boolean canDrain(ForgeDirection from, Fluid fluid) {
-        if (!this.isValid()) {
+        if (fluid == null || !this.isValid()) {
             return false;
         } else {
             return this.getFluid() == null ? false
@@ -1176,7 +1246,7 @@ public class TileEntityValve extends TileEntity
 
     public FluidTankInfo[] getTankInfo(ForgeDirection from) {
         if (!this.isValid()) {
-            return null;
+            return new FluidTankInfo[0];
         } else {
             return this.getMaster() == this ? new FluidTankInfo[] { this.getInfo() }
                 : this.getMaster()
@@ -1410,6 +1480,6 @@ public class TileEntityValve extends TileEntity
     }
 
     public int getComparatorOutput() {
-        return MathHelper.floor_float((float) this.getFluidAmount() / this.getCapacity() * 14.0F);
+        return TankMath.comparatorOutput(this.getFluidAmount(), this.getCapacity());
     }
 }

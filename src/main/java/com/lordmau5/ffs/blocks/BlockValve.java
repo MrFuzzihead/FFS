@@ -55,13 +55,15 @@ public class BlockValve extends Block {
             valve.breakTank(null);
         }
 
-        super.onBlockDestroyedByExplosion(world, x, y, z, explosion);
+        super.onBlockExploded(world, x, y, z, explosion);
     }
 
     public void breakBlock(World world, int x, int y, int z, Block block, int metadata) {
         if (!world.isRemote) {
-            TileEntityValve valve = (TileEntityValve) world.getTileEntity(x, y, z);
-            valve.breakTank(null);
+            TileEntity tile = world.getTileEntity(x, y, z);
+            if (tile instanceof TileEntityValve) {
+                ((TileEntityValve) tile).breakTank(null);
+            }
         }
 
         super.breakBlock(world, x, y, z, block, metadata);
@@ -75,6 +77,10 @@ public class BlockValve extends Block {
             return false;
         } else {
             TileEntityValve valve = (TileEntityValve) world.getTileEntity(x, y, z);
+            if (valve == null) {
+                return false;
+            }
+
             if (valve.isValid()) {
                 if (GenericUtil.isFluidContainer(player.getHeldItem())) {
                     return GenericUtil.fluidContainerHandler(world, x, y, z, valve, player);
