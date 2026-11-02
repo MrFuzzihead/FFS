@@ -56,8 +56,15 @@ public final class TankMath {
      */
     public static boolean canAutoOutput(double fillFraction, int tankHeight, int valvePosition,
         boolean negativeDensity) {
-        if (negativeDensity || tankHeight <= 0 || fillFraction <= 0.0D) {
+        if (tankHeight <= 0 || fillFraction <= 0.0D) {
             return false;
+        }
+
+        if (negativeDensity) {
+            // Gases fill from the top; the gas is present down to the lower
+            // surface. A valve at or above that surface is submerged.
+            double gasBottom = (1.0D - fillFraction) * (double) tankHeight;
+            return (double) valvePosition + 0.5D >= gasBottom;
         }
 
         return fillFraction * (double) tankHeight > (double) valvePosition - 0.5D;
@@ -65,15 +72,27 @@ public final class TankMath {
 
     /**
      * Whether a valve may accept fluid while auto-output is enabled. The valve must
-     * be at or above the current fluid surface (the 0..1 fraction, not 0..100).
+     * be on the empty side of the fluid surface.
      */
     public static boolean canFillFromHeight(int valvePosition, int tankHeight, double fillFraction,
         boolean autoOutput) {
+        return canFillFromHeight(valvePosition, tankHeight, fillFraction, autoOutput, false);
+    }
+
+    public static boolean canFillFromHeight(int valvePosition, int tankHeight, double fillFraction, boolean autoOutput,
+        boolean negativeDensity) {
         if (!autoOutput || tankHeight <= 0) {
             return true;
         }
 
-        return (double) valvePosition + 0.5D >= (double) tankHeight * fillFraction;
+        double surface = negativeDensity ? (1.0D - fillFraction) * (double) tankHeight
+            : fillFraction * (double) tankHeight;
+
+        if (negativeDensity) {
+            return (double) valvePosition + 0.5D <= surface;
+        }
+
+        return (double) valvePosition + 0.5D >= surface;
     }
 
     /**

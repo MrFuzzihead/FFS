@@ -32,6 +32,9 @@ public class TileEntityTankFrame extends TileEntity implements IMoveCheck {
     public void initialize(TileEntityValve masterValve, ExtendedBlock block) {
         this.masterValve = masterValve;
         this.block = block;
+        if (masterValve != null) {
+            this.valvePos = new Position3D(masterValve.xCoord, masterValve.yCoord, masterValve.zCoord);
+        }
     }
 
     /** The stored block, or {@code null} if this frame was saved by a removed mod. */
@@ -129,6 +132,27 @@ public class TileEntityTankFrame extends TileEntity implements IMoveCheck {
     public void setValvePos(Position3D valvePos) {
         this.valvePos = valvePos;
         this.masterValve = null;
+    }
+
+    public Position3D getValvePos() {
+        return this.valvePos;
+    }
+
+    /**
+     * {@code true} when this frame already belongs to a different, still-valid
+     * tank. Shared walls must not be silently stolen by the next tank that forms.
+     */
+    public boolean isOwnedByOther(TileEntityValve master) {
+        if (this.valvePos == null) {
+            return false;
+        }
+
+        if (master != null && this.valvePos.equals(new Position3D(master.xCoord, master.yCoord, master.zCoord))) {
+            return false;
+        }
+
+        TileEntityValve other = this.getValve();
+        return other != null && other.isValid();
     }
 
     public TileEntityValve getValve() {

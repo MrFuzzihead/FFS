@@ -161,15 +161,22 @@ the implementation. Work is organised in review-driven batches (see
 
 - Modernised build system for 2026 (GTNH convention plugin, Gradle wrapper,
   auto-provisioned JDK, GitHub Actions CI)
-- Review document and test harness (JUnit 5 + `headlessTest`)
+- Review document and test harness (JUnit 5 + `headlessTest`, 40 tests)
 - Safety fixes: explosion handling, client-side container guard, NBT robustness,
   removed-mod block handling, leak-hardness crash, capacity overflow, fire config,
   `canFill` units, null-valve GUI guard
+- Tank geometry rewrite: a fresh six-direction measurement (`TankGeometry`), no stale
+  `length[]`, and `MAX_SIZE` now includes the shell as documented
+- Tank ownership fixes: foreign masters are rejected, shared-wall frames are
+  protected, absorbed slaves are demoted, stale slaves are invalidated, and placing a
+  block inside a tank breaks it immediately
+- Tank-wide auto-output (toggling a slave valve now affects the tank), single rain
+  collection per tank per tick, and correct auto-output/fill rules for gases
+- Correct chunk-rectangle loading, fixed RemainInMotion rotation, and CC peripheral
+  equality
 
 **Planned**
 
-- Tank ownership fixes (shared walls, edge valves, stale slaves)
-- Fluid-handler contract fixes (drain fluid matching, no spill into neighbours)
 - Performance: frame ticking, packet storm, map-free tank geometry, surface-only
   fluid rendering
 - Renderer/GUI fixes (face/normal mapping, render-pass state, scissor math, GL state)

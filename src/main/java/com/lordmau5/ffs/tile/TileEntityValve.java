@@ -31,6 +31,7 @@ import com.lordmau5.ffs.util.ExtendedBlock;
 import com.lordmau5.ffs.util.GenericUtil;
 import com.lordmau5.ffs.util.NbtHelper;
 import com.lordmau5.ffs.util.Position3D;
+import com.lordmau5.ffs.util.TankGeometry;
 import com.lordmau5.ffs.util.TankMath;
 import com.rwtema.funkylocomotion.api.IMoveCheck;
 
@@ -70,11 +71,10 @@ public class TileEntityValve extends TileEntity
     public int tankHeight = 0;
     public int valveHeightPosition = 0;
     private boolean autoOutput;
-    private int fluidIntake;
-    private int fluidOuttake;
-    private int rainIntake;
     private int randomBurnTicks = 100;
     private int randomLeakTicks = 1200;
+    private long lastRainTick = -1L;
+    private boolean building;
     private ForgeDirection inside = ForgeDirection.UNKNOWN;
     private TileEntityValve master;
     public List<TileEntityTankFrame> tankFrames;
@@ -106,17 +106,6 @@ public class TileEntityValve extends TileEntity
                 this.getMaster()
                     .markForUpdate(true);
                 this.needsUpdate = false;
-                if (this.fluidIntake != 0) {
-                    this.fluidIntake = 0;
-                }
-
-                if (this.fluidOuttake != 0) {
-                    this.fluidOuttake = 0;
-                }
-
-                if (this.rainIntake != 0) {
-                    this.rainIntake = 0;
-                }
             }
 
             if (this.initiated && this.isMaster()) {
@@ -125,14 +114,15 @@ public class TileEntityValve extends TileEntity
                         .getChunkFromBlockCoords(this.bottomDiagFrame.getX(), this.bottomDiagFrame.getZ());
                     Chunk chunkTop = this.worldObj
                         .getChunkFromBlockCoords(this.topDiagFrame.getX(), this.topDiagFrame.getZ());
-                    Position3D pos_chunkBottom = new Position3D(chunkBottom.xPosition, 0, chunkBottom.zPosition);
-                    Position3D pos_chunkTop = new Position3D(chunkTop.xPosition, 0, chunkTop.zPosition);
-                    Position3D diff = pos_chunkTop.getDistance(pos_chunkBottom);
+                    int minChunkX = Math.min(chunkBottom.xPosition, chunkTop.xPosition);
+                    int maxChunkX = Math.max(chunkBottom.xPosition, chunkTop.xPosition);
+                    int minChunkZ = Math.min(chunkBottom.zPosition, chunkTop.zPosition);
+                    int maxChunkZ = Math.max(chunkBottom.zPosition, chunkTop.zPosition);
 
-                    for (int x = 0; x <= diff.getX(); x++) {
-                        for (int z = 0; z <= diff.getZ(); z++) {
+                    for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
+                        for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
                             this.worldObj.getChunkProvider()
-                                .loadChunk(pos_chunkTop.getX() + x, pos_chunkTop.getZ() + z);
+                                .loadChunk(chunkX, chunkZ);
                         }
                     }
 
@@ -179,8 +169,9 @@ public class TileEntityValve extends TileEntity
                                     FluidStack fillStack = this.getFluid()
                                         .copy();
                                     fillStack.amount = Math.min(this.getFluidAmount(), maxAmount);
-                                    if (handler.fill(this.inside, fillStack, false) > 0) {
-                                        this.drain(handler.fill(this.inside, fillStack, true), true);
+                                    int accepted = handler.fill(this.inside, fillStack, true);
+                                    if (accepted > 0) {
+                                        this.drain(accepted, true);
                                     }
                                 }
                             }
@@ -189,14 +180,19 @@ public class TileEntityValve extends TileEntity
 
                     if (this.getFluid() != null && this.getFluid()
                         .getFluid() == FluidRegistry.WATER && this.worldObj.isRaining()) {
-                        int rate = (int) Math.floor(
-                            this.worldObj.rainingStrength * 5.0F
-                                * this.worldObj.getBiomeGenForCoords(this.xCoord, this.zCoord).rainfall);
-                        if (this.yCoord == this.worldObj.getPrecipitationHeight(this.xCoord, this.zCoord) - 1) {
+                        TileEntityValve master = this.getMaster();
+                        long worldTime = this.worldObj.getTotalWorldTime();
+                        if (master != null && master.lastRainTick != worldTime
+                            && this.yCoord == this.worldObj.getPrecipitationHeight(this.xCoord, this.zCoord) - 1) {
+                            // Only one valve per tank may collect rain per tick; the old
+                            // code added the full rate for every exposed valve.
+                            master.lastRainTick = worldTime;
+                            int rate = (int) Math.floor(
+                                this.worldObj.rainingStrength * 5.0F
+                                    * this.worldObj.getBiomeGenForCoords(this.xCoord, this.zCoord).rainfall);
                             FluidStack waterStack = this.getFluid()
                                 .copy();
                             waterStack.amount = rate * 10;
-                            this.rainIntake = this.rainIntake + waterStack.amount;
                             this.fill(waterStack, true);
                         }
                     }
@@ -375,28 +371,32 @@ public class TileEntityValve extends TileEntity
     }
 
     private List<TileEntityValve> getAllValves() {
-        if (!this.isMaster() && this.getMaster() != this) {
-            return this.getMaster()
-                .getAllValves();
-        } else {
-            List<TileEntityValve> valves = new ArrayList<>();
-            valves.add(this);
-            if (this.otherValves.isEmpty()) {
-                return valves;
-            } else {
-                for (TileEntityValve valve : this.otherValves) {
-                    valves.add(valve);
-                }
-
-                return valves;
+        if (!this.isMaster()) {
+            TileEntityValve master = this.getMaster();
+            if (master != null && master != this) {
+                return master.getAllValves();
             }
         }
+
+        List<TileEntityValve> valves = new ArrayList<>();
+        valves.add(this);
+        if (this.otherValves == null) {
+            return valves;
+        }
+
+        for (TileEntityValve valve : this.otherValves) {
+            if (valve != null && valve != this && !valves.contains(valve)) {
+                valves.add(valve);
+            }
+        }
+
+        return valves;
     }
 
     private List<TileEntityValve> getValvesByName(String name) {
         if (!this.isMaster()) {
-            return this.getMaster()
-                .getValvesByName(name);
+            TileEntityValve master = this.getMaster();
+            return master == null ? new ArrayList<>() : master.getValvesByName(name);
         } else {
             List<TileEntityValve> valves = new ArrayList<>();
             if (this.getAllValves()
@@ -451,6 +451,9 @@ public class TileEntityValve extends TileEntity
 
     public void buildTank(ForgeDirection inside) {
         if (!this.worldObj.isRemote) {
+            // Drop the old slaves first; otherwise they keep pointing at this valve
+            // and report themselves valid for the rebuilt tank.
+            this.invalidatePreviousSlaves();
             this.setValid(false);
             this.fluidCapacity = 0;
             this.tankFrames.clear();
@@ -459,36 +462,35 @@ public class TileEntityValve extends TileEntity
                 this.setInside(inside);
             }
 
-            if (this.calculateInside()) {
-                if (this.setupTank()) {
+            this.building = true;
+            try {
+                if (this.calculateInside() && this.setupTank()) {
                     this.initiated = false;
                     this.updateBlockAndNeighbors();
                 }
+            } finally {
+                this.building = false;
             }
         }
     }
 
     public boolean calculateInside() {
-        int xIn = this.xCoord + this.inside.offsetX;
-        int yIn = this.yCoord + this.inside.offsetY;
-        int zIn = this.zCoord + this.inside.offsetZ;
-
-        for (ForgeDirection dr : ForgeDirection.VALID_DIRECTIONS) {
-            for (int i = 0; i < this.maxSize; i++) {
-                if (!this.worldObj.isAirBlock(xIn + dr.offsetX * i, yIn + dr.offsetY * i, zIn + dr.offsetZ * i)) {
-                    this.length[dr.ordinal()] = i - 1;
-                    break;
-                }
-            }
+        TankGeometry.Shape shape = TankGeometry.measure(
+            (x, y, z) -> this.worldObj.isAirBlock(x, y, z),
+            this.xCoord,
+            this.yCoord,
+            this.zCoord,
+            this.inside,
+            this.maxSize);
+        if (!shape.valid) {
+            return false;
         }
 
-        for (int ix = 0; ix < 6; ix += 2) {
-            if (this.length[ix] + this.length[ix + 1] > this.maxSize) {
-                return false;
-            }
-        }
-
-        return this.length[0] != -1;
+        System.arraycopy(shape.lengths, 0, this.length, 0, this.length.length);
+        this.bottomDiagFrame = shape.bottomDiag;
+        this.topDiagFrame = shape.topDiag;
+        this.tankHeight = shape.tankHeight;
+        return true;
     }
 
     private void setSlaveValveInside(Map<Position3D, ExtendedBlock> airBlocks, TileEntityValve slave) {
@@ -684,6 +686,12 @@ public class TileEntityValve extends TileEntity
                         if (tile instanceof TileEntityValve) {
                             TileEntityValve valve = (TileEntityValve) tile;
                             if (valve != this) {
+                                TileEntityValve owner = valve.getMaster();
+                                if (owner != null && owner != this && owner.isValid()) {
+                                    // This valve already belongs to another live tank;
+                                    // absorbing it would merge/steal that tank.
+                                    return false;
+                                }
                                 if (valve.fluidStack != null) {
                                     this.fluidStack = valve.fluidStack;
                                     this.updateFluidTemperature();
@@ -706,6 +714,8 @@ public class TileEntityValve extends TileEntity
 
                 for (TileEntityValve valve : valves) {
                     pos = new Position3D(valve.xCoord, valve.yCoord, valve.zCoord);
+                    valve.invalidatePreviousSlaves();
+                    valve.setMaster(false);
                     valve.valveHeightPosition = Math.abs(
                         this.bottomDiagFrame.getDistance(pos)
                             .getY());
@@ -713,7 +723,7 @@ public class TileEntityValve extends TileEntity
                     this.setSlaveValveInside(this.maps[2], valve);
                 }
 
-                this.isMaster = true;
+                this.setMaster(true);
 
                 for (Entry<Position3D, ExtendedBlock> setTiles : this.maps[0].entrySet()) {
                     pos = setTiles.getKey();
@@ -730,10 +740,16 @@ public class TileEntityValve extends TileEntity
                             3);
                         tankFrame = (TileEntityTankFrame) this.worldObj
                             .getTileEntity(pos.getX(), pos.getY(), pos.getZ());
+                        if (tankFrame == null) {
+                            return false;
+                        }
                         tankFrame.initialize(this, setTiles.getValue());
                     } else {
                         tankFrame = (TileEntityTankFrame) this.worldObj
                             .getTileEntity(pos.getX(), pos.getY(), pos.getZ());
+                        if (tankFrame == null || tankFrame.isOwnedByOther(this)) {
+                            return false;
+                        }
                         tankFrame.setValvePos(new Position3D(this.xCoord, this.yCoord, this.zCoord));
                     }
 
@@ -747,9 +763,12 @@ public class TileEntityValve extends TileEntity
                         if (tilex instanceof TileEntityValve && tilex != this) {
                             this.otherValves.add((TileEntityValve) tilex);
                         } else if (tilex instanceof TileEntityTankFrame) {
-                            ((TileEntityTankFrame) tilex)
-                                .setValvePos(new Position3D(this.xCoord, this.yCoord, this.zCoord));
-                            this.tankFrames.add((TileEntityTankFrame) tilex);
+                            TileEntityTankFrame tankFrame = (TileEntityTankFrame) tilex;
+                            if (tankFrame.isOwnedByOther(this)) {
+                                return false;
+                            }
+                            tankFrame.setValvePos(new Position3D(this.xCoord, this.yCoord, this.zCoord));
+                            this.tankFrames.add(tankFrame);
                         } else if (GenericUtil.isTileEntityAcceptable(
                             setTiles.getValue()
                                 .getBlock(),
@@ -764,6 +783,9 @@ public class TileEntityValve extends TileEntity
                                     2);
                                 TileEntityTankFrame tankFrame = (TileEntityTankFrame) this.worldObj
                                     .getTileEntity(pos.getX(), pos.getY(), pos.getZ());
+                                if (tankFrame == null) {
+                                    return false;
+                                }
                                 tankFrame.initialize(this, setTiles.getValue());
                                 this.tankFrames.add(tankFrame);
                             }
@@ -778,12 +800,15 @@ public class TileEntityValve extends TileEntity
                             2);
                         TileEntityTankFrame tankFrame = (TileEntityTankFrame) this.worldObj
                             .getTileEntity(pos.getX(), pos.getY(), pos.getZ());
+                        if (tankFrame == null) {
+                            return false;
+                        }
                         tankFrame.initialize(this, setTiles.getValue());
                         this.tankFrames.add(tankFrame);
                     }
                 }
 
-                this.isValid = true;
+                this.setValid(true);
                 return true;
             }
     }
@@ -824,6 +849,54 @@ public class TileEntityValve extends TileEntity
 
     public void setValid(boolean isValid) {
         this.isValid = isValid;
+    }
+
+    /** Called by the shell blocks when a neighbour changes. */
+    public void onNeighborChangedAt(int x, int y, int z) {
+        if (this.worldObj == null || this.worldObj.isRemote || this.building) {
+            return;
+        }
+
+        TileEntityValve master = this.getMaster();
+        if (master == null || master.building || !master.isValid() || master.maps == null || master.maps[2] == null) {
+            return;
+        }
+
+        // A non-air block inside the interior invalidates the tank immediately
+        // instead of waiting for the next chunk load / manual rebuild.
+        if (master.maps[2].containsKey(new Position3D(x, y, z)) && !master.worldObj.isAirBlock(x, y, z)) {
+            master.breakTank(null);
+        }
+    }
+
+    private void invalidatePreviousSlaves() {
+        if (this.otherValves == null) {
+            return;
+        }
+
+        for (TileEntityValve valve : this.otherValves) {
+            if (valve == null || valve == this) {
+                continue;
+            }
+
+            valve.masterValvePos = null;
+            valve.master = null;
+            valve.setMaster(false);
+            valve.setValid(false);
+            valve.updateBlockAndNeighbors();
+        }
+    }
+
+    @Override
+    public void invalidate() {
+        super.invalidate();
+        this.master = null;
+        if (this.tankFrames != null) {
+            this.tankFrames.clear();
+        }
+        if (this.otherValves != null) {
+            this.otherValves.clear();
+        }
     }
 
     public boolean isValid() {
@@ -887,14 +960,27 @@ public class TileEntityValve extends TileEntity
     public TileEntityValve getMaster() {
         if (this.isMaster()) {
             return this;
-        } else {
-            if (this.masterValvePos != null) {
-                TileEntity tile = this.worldObj
-                    .getTileEntity(this.masterValvePos.getX(), this.masterValvePos.getY(), this.masterValvePos.getZ());
-                this.master = tile instanceof TileEntityValve ? (TileEntityValve) tile : null;
-            }
+        }
 
+        if (this.master != null && !this.master.isInvalid()) {
             return this.master;
+        }
+        this.master = null;
+
+        if (this.masterValvePos != null && this.worldObj != null) {
+            TileEntity tile = this.worldObj
+                .getTileEntity(this.masterValvePos.getX(), this.masterValvePos.getY(), this.masterValvePos.getZ());
+            this.master = tile instanceof TileEntityValve ? (TileEntityValve) tile : null;
+        }
+
+        return this.master;
+    }
+
+    void setMaster(boolean master) {
+        this.isMaster = master;
+        if (master) {
+            this.masterValvePos = null;
+            this.master = null;
         }
     }
 
@@ -904,10 +990,21 @@ public class TileEntityValve extends TileEntity
     }
 
     public boolean getAutoOutput() {
-        return this.isValid() && this.autoOutput;
+        if (!this.isValid()) {
+            return false;
+        }
+
+        TileEntityValve master = this.getMaster();
+        return master != null && master.autoOutput;
     }
 
     public void setAutoOutput(boolean autoOutput) {
+        TileEntityValve master = this.getMaster();
+        if (master != null && master != this) {
+            master.setAutoOutput(autoOutput);
+            return;
+        }
+
         this.autoOutput = autoOutput;
         this.updateBlockAndNeighbors(true);
     }
@@ -917,6 +1014,7 @@ public class TileEntityValve extends TileEntity
         this.isValid = tag.getBoolean("isValid");
         this.inside = ForgeDirection.getOrientation(tag.getInteger("inside"));
         this.isMaster = tag.getBoolean("master");
+        this.valveHeightPosition = Math.max(0, tag.getInteger("valveHeightPosition"));
         if (this.isMaster()) {
             this.tankHeight = Math.max(0, tag.getInteger("tankHeight"));
             this.fluidCapacity = Math.max(0, tag.getInteger("fluidCapacity"));
@@ -954,6 +1052,7 @@ public class TileEntityValve extends TileEntity
         tag.setBoolean("isValid", this.isValid);
         tag.setInteger("inside", this.inside.ordinal());
         tag.setBoolean("master", this.isMaster());
+        tag.setInteger("valveHeightPosition", this.valveHeightPosition);
         if (this.isMaster()) {
             String fluidName = this.fluidStack == null ? null : FluidRegistry.getFluidName(this.fluidStack);
             tag.setBoolean("hasFluid", this.fluidStack != null);
@@ -1063,22 +1162,6 @@ public class TileEntityValve extends TileEntity
             return this.getMaster()
                 .fill(resource, doFill);
         } else if (this.isValid() && (this.fluidStack == null || this.fluidStack.isFluidEqual(resource))) {
-            if (this.getFluidAmount() >= this.getCapacity()) {
-                for (TileEntityValve valve : this.getAllValves()) {
-                    if (valve != this) {
-                        ForgeDirection outside = valve.getInside()
-                            .getOpposite();
-                        TileEntity tile = this.worldObj.getTileEntity(
-                            valve.xCoord + outside.offsetX,
-                            valve.yCoord + outside.offsetY,
-                            valve.zCoord + outside.offsetZ);
-                        if (tile != null && tile instanceof TileEntityValve) {
-                            return ((TileEntityValve) tile).fill(this.getInside(), resource, doFill);
-                        }
-                    }
-                }
-            }
-
             if (!doFill) {
                 return this.fluidStack == null ? Math.min(this.fluidCapacity, resource.amount)
                     : Math.min(this.fluidCapacity - this.fluidStack.amount, resource.amount);
@@ -1086,7 +1169,6 @@ public class TileEntityValve extends TileEntity
                 this.fluidStack = new FluidStack(resource, Math.min(this.fluidCapacity, resource.amount));
                 this.updateFluidTemperature();
                 this.setNeedsUpdate();
-                this.fluidIntake = this.fluidIntake + this.fluidStack.amount;
                 return this.fluidStack.amount;
             } else {
                 int filled = this.fluidCapacity - this.fluidStack.amount;
@@ -1097,7 +1179,6 @@ public class TileEntityValve extends TileEntity
                     this.fluidStack.amount = this.fluidCapacity;
                 }
 
-                this.fluidIntake += filled;
                 this.getMaster()
                     .setNeedsUpdate();
                 return filled;
@@ -1127,7 +1208,6 @@ public class TileEntityValve extends TileEntity
                         this.updateFluidTemperature();
                     }
 
-                    this.fluidOuttake += drained;
                     this.getMaster()
                         .setNeedsUpdate();
                 }
@@ -1202,20 +1282,6 @@ public class TileEntityValve extends TileEntity
             .getFluid() != fluid) {
                 return false;
             } else if (this.getFluidAmount() >= this.getCapacity()) {
-                for (TileEntityValve valve : this.getAllValves()) {
-                    if (valve != this && valve.valveHeightPosition > this.getTankHeight()) {
-                        ForgeDirection outside = valve.getInside()
-                            .getOpposite();
-                        TileEntity tile = this.worldObj.getTileEntity(
-                            valve.xCoord + outside.offsetX,
-                            valve.yCoord + outside.offsetY,
-                            valve.zCoord + outside.offsetZ);
-                        if (tile != null && tile instanceof TileEntityValve) {
-                            return ((TileEntityValve) tile).canFill(valve.getInside(), fluid);
-                        }
-                    }
-                }
-
                 return false;
             } else {
                 return true;
@@ -1227,11 +1293,17 @@ public class TileEntityValve extends TileEntity
             return false;
         }
 
+        FluidStack stack = this.getFluid();
+        boolean negativeDensity = stack != null && stack.getFluid() != null
+            && stack.getFluid()
+                .getDensity(stack) < 0;
+
         return TankMath.canFillFromHeight(
             this.valveHeightPosition,
             this.getTankHeight(),
             TankMath.fillFraction(this.getFluidAmount(), this.getCapacity()),
-            this.getAutoOutput());
+            this.getAutoOutput(),
+            negativeDensity);
     }
 
     public boolean canDrain(ForgeDirection from, Fluid fluid) {
@@ -1370,7 +1442,7 @@ public class TileEntityValve extends TileEntity
 
     @Method(modid = "ComputerCraft")
     public boolean equals(IPeripheral other) {
-        return false;
+        return other == this;
     }
 
     @Method(modid = "OpenComputers")

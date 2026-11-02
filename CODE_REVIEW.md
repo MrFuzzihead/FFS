@@ -24,15 +24,26 @@ The harness is:
 | ----- | ----- | ------ |
 | 0 | Review doc, README, JUnit 5 + `headlessTest` task, pure-helper extraction | done |
 | 1 | P0 safety fixes: explosions, client-side containers, NBT, null blocks, leak crash, capacity overflow, fire config, `canFill` units, GUI null | done |
-| 2 | P1 correctness: tank ownership (shared walls/edge valves/stale slaves), `breakTank` fluid, auto-output per tank, interior invalidation, geometry (`length[]` reset, MAX_SIZE), fluid-handler contract, rain/negative density, RiM rotation, CC equality | planned |
+| 2 | P1 correctness: tank ownership (shared walls/edge valves/stale slaves), `breakTank` fluid, auto-output per tank, interior invalidation, geometry (`length[]` reset, MAX_SIZE), fluid-handler contract, rain/negative density, RiM rotation, CC equality | done |
 | 3 | P2 performance: `canUpdate()=false` for frames, packet storm, master cache, map-free geometry, surface-only fluid renderer, wrapper reuse, precipitation cache, RNG reuse | planned |
 | 4 | Renderer/GUI: face/normal fixes, render-pass global hack, scissor math, GL state restore, bounding boxes, lighting | planned |
 | 5 | Build/packaging: `ffs` casing, resource domain, `mcmod.info`, optional dependency scopes, TE registry names, tests in CI | planned |
 | 6 | Architecture: split `TileEntityValve` into structure/fluid/hazards/peripheral classes; shared CC/OC command layer | planned |
 
+### Test coverage shipped with batch 2
+
+`./gradlew headlessTest` now runs 40 JUnit 5 tests. Batch 2 added:
+
+- `TankGeometryTest` (9) + `FakeBlockGrid` headless harness — valid shells, floor
+  valves, minimum 3×3×3, MAX_SIZE including the frame, missing walls (no stale
+  lengths), open areas, unknown `inside`, invalid arguments, call independence.
+- `TankMathTest` (12) — added gas (`negativeDensity`) auto-output and fill-height
+  rules.
+- `TileEntityTankFrameTest` — added valve-position getter and ownership checks.
+
 ### Test coverage shipped with batch 1
 
-`./gradlew headlessTest` runs 29 JUnit 5 tests:
+`./gradlew headlessTest` started with 29 JUnit 5 tests:
 
 - `TankMathTest` — capacity saturation, 0..1 fill fractions, 0..15 comparator,
   auto-output height, `canFill` height units, leak-hardness clamping/validity.
@@ -159,63 +170,70 @@ and the GUI.
 ## 2. P1 — correctness
 
 ### Tank formation / ownership
-- **Edge valves are destroyed by `setupTank`** (`TileEntityValve.java:685-701`): the
-  `maps[0]` loop has no `TileEntityValve` check and replaces any valve on an edge with
-  a `blockTankFrame`. `World.setBlock` fires `BlockValve.breakBlock`, which re-enters
-  `breakTank` mid-build. A stray/foreign valve at the edge, or stale `length[]`, is
-  enough. Skip `this`; attach foreign valves as slaves instead of replacing them.
-- **`length[]` is never reset between `calculateInside` calls**
-  (`TileEntityValve.java:460-480`); directions with no wall keep stale values, and
-  the only validity check is `length[DOWN] != -1`. Reset and require all six walls.
-- **`MAX_SIZE` is off by 3**: the check is `lengthW + lengthE > maxSize`, but the full
-  width is `lengthW + lengthE + 3`. Default 13 allows 16; 32 allows 35.
-- **Shared walls steal frames**: `setupTank` calls `setValvePos` on any
-  `TileEntityTankFrame` in its shell, including another tank's. Breaking either tank
-  destroys the other's wall.
-- **Second masters are not demoted**: a foreign master valve in `maps[1]` is added to
-  `otherValves` and gets `setMasterPos`, but `isMaster` stays `true` (two masters share
-  `getAllValves`/fluid).
-- **Stale slaves stay valid after a rebuild**: `buildTank` clears `tankFrames` /
-  `otherValves` without invalidating the old slaves, which still report valid and can
-  fill/drain the new tank through the old wall.
-- **No interior invalidation**: placing a block inside a valid tank does not break it;
-  it only fails on the next chunk load. Add a neighbour/placement hook or cheap
-  periodic validation.
-- **`valveHeightPosition` is not persisted** while `isValid`/`tankHeight` are; for 20
-  ticks after a chunk load valves act as bottom valves and can push fluid.
-- **Chunk-load loop is wrong** (`TileEntityValve.java:122-140`): `diff = top − bottom`
-  then loads `top + x` for `x ∈ [0, diff]`, i.e. only when the top is east/south and
-  then the wrong chunks. Start at `min` and iterate `|diff| + 1`.
+- **Edge valves are rejected, not destroyed** (`TileEntityValve.java` validation): the
+  original review suspected the `maps[0]` loop would replace a valve with a
+  `blockTankFrame`, but `isValidTankBlock` / `areTankBlocksValid` reject a raw valve
+  first, so the tank simply fails to form. The master valve also cannot land on an
+  edge when `calculateInside` succeeds (the interior start would be solid). The real
+  bugs were the ownership cases below.
+- **`length[]` was never reset between `calculateInside` calls**
+  (`TileEntityValve.java:460-480`); directions with no wall kept stale values, and
+  the only validity check was `length[DOWN] != -1`. Fixed by `TankGeometry`, which
+  allocates a fresh array and requires a wall in all six directions.
+- **`MAX_SIZE` was off by 3**: the old check was `lengthW + lengthE > maxSize`, but the
+  full width is `lengthW + lengthE + 3`. `TankGeometry` enforces the documented
+  whole-tank size (`+ 3 <= maxSize`). Note: existing tanks larger than the configured
+  limit are now rejected on rebuild; default 13 means a maximum 13-wide axis (the old
+  code allowed 16).
+- **Shared walls stole frames**: `setupTank` called `setValvePos` on any
+  `TileEntityTankFrame`, including another tank's. `isOwnedByOther` now rejects a frame
+  owned by a different, still-valid tank.
+- **Second masters were not demoted**: a foreign master valve in `maps[1]` was added
+  to `otherValves` and kept `isMaster = true`. `setupTank` now rejects a foreign
+  master, and absorbed slaves are demoted.
+- **Stale slaves stayed valid after a rebuild**: `buildTank` now invalidates the old
+  `otherValves` before clearing the lists.
+- **No interior invalidation**: placing a block inside a valid tank did not break it.
+  `BlockTankFrame`/`BlockValve` now forward neighbour changes (both
+  `onNeighborChange` and `onNeighborBlockChange`) and the master breaks the tank when
+  an interior position becomes non-air.
+- **`valveHeightPosition` was not persisted** while `isValid`/`tankHeight` were; for
+  20 ticks after a chunk load valves acted as bottom valves. It is now saved/loaded.
+- **Chunk-load loop was wrong** (`TileEntityValve.java:122-140`): it loaded
+  `top + x` for `x ∈ [0, top − bottom]`. It now iterates the min/max chunk rectangle.
+
 
 ### Fluid logic
-- `drain(ForgeDirection, FluidStack, boolean)` ignores the fluid type and drains
-  `resource.amount` of whatever is in the tank.
-- `fill` spills into adjacent tanks when full: it forwards a real fill to any
-  `TileEntityValve` touching one of its valves' outside faces.
-- Auto-output calls `fill` twice (simulate + real) and drains the second result;
-  use the accepted amount from a single real fill.
-- `getTankInfo` returns `null` for invalid tanks; the `IFluidHandler` contract expects
-  a non-null array.
-- The full-tank loop in `canFillIncludingContainers` (`valveHeightPosition >
-  getTankHeight()`) is dead.
-- Rain ignores a roof and multiplies per top-level valve; `getPrecipitationHeight` is
-  a full column scan every tick. Check an interior column and scale by exposed area.
-- Negative-density fluids never auto-output (`canAutoOutput` returns false) and the
-  renderer draws the full interior with a uniform alpha.
-- `getComparatorOutput` returns 0–14; full tanks are indistinguishable from ≥93%.
-- `fluidIntake` / `fluidOuttake` / `rainIntake` are write-only; `getFluidLuminosity`
-  is unused; `ANONYMOUS_STATISTICS` is a dead config option that promises telemetry.
+- **Fixed (batch 1):** `drain(ForgeDirection, FluidStack, boolean)` ignored the fluid
+  type and drained `resource.amount` of whatever was in the tank. It now requires a
+  matching fluid.
+- **Fixed (batch 2):** `fill` spilled into adjacent tanks when full; the forwarding
+  loop was removed, so a full tank returns 0.
+- **Fixed (batch 2):** auto-output called `fill` twice; it now performs one real fill
+  and drains the accepted amount.
+- **Fixed (batch 1):** `getTankInfo` returned `null` for invalid tanks; it now returns
+  an empty array.
+- **Fixed (batch 2):** the dead full-tank loop in `canFillIncludingContainers` was
+  removed; a full tank simply rejects further fill.
+- **Partially fixed (batch 2):** rain no longer multiplies per top-level valve (one
+  collection per tank per tick). The roof/sky-column check and the per-tick
+  `getPrecipitationHeight` cost remain for batch 3.
+- **Fixed (batch 2):** negative-density fluids now auto-output and obey the mirrored
+  fill-height rule. The renderer still draws the full interior with a uniform alpha
+  (batch 4).
+- **Fixed (batch 1):** `getComparatorOutput` now returns 0–15.
+- **Fixed (batch 2):** `fluidIntake` / `fluidOuttake` / `rainIntake` were removed.
+  `getFluidLuminosity` remains unused (feature) and `ANONYMOUS_STATISTICS` remains a
+  dead telemetry config option (batch 5).
 
 ### Auto-output / GUI / peripherals
-- Auto-output is per-valve, not per-tank: toggling a slave valve's GUI has no effect
-  on the master, and the toggle shows the slave's own (wrong) state.
-  `UpdateAutoOutput_Server` should apply to the whole tank.
-- `equals(IPeripheral)` always returns false; CC may treat the peripheral as replaced
-  on every rescan. Return `other == this`.
+- **Fixed (batch 2):** auto-output is now tank-wide; toggling a slave valve's GUI
+  changes the master's flag and the toggle shows the master's state.
+- **Fixed (batch 2):** `equals(IPeripheral)` returns `other == this`.
 - OC `invoke` returns `null` for unknown methods; throw/return an error.
-- `RiMEventHandler.tileRotation` uses
-  `event.axis.getRotation(event.axis.getRotation(event.axis))`, which is a no-op for
-  Y-axis rotations. Use `getInside().getRotation(event.axis)`. Verify the RiM mod id.
+- **Fixed (batch 2):** `RiMEventHandler.tileRotation` now calls
+  `getInside().getRotation(event.axis)` once instead of rotating around the axis
+  twice. Verify the RiM mod id.
 - Packet handlers do not validate distance/permissions and the valve name has no
   length limit. They also run on the Netty pipeline; schedule world access onto the
   server thread.

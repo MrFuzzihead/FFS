@@ -73,6 +73,23 @@ class TankMathTest {
     }
 
     @Test
+    void gasAutoOutputUsesTheLowerSurface() {
+        assertTrue(TankMath.canAutoOutput(1.0D, 10, 0, true));
+        assertTrue(TankMath.canAutoOutput(0.5D, 10, 5, true));
+        assertFalse(TankMath.canAutoOutput(0.5D, 10, 4, true));
+        assertFalse(TankMath.canAutoOutput(0.0D, 10, 9, true));
+    }
+
+    @Test
+    void gasFillHeightUsesTheLowerSurface() {
+        assertTrue(TankMath.canFillFromHeight(4, 10, 0.5D, true, true));
+        assertFalse(TankMath.canFillFromHeight(5, 10, 0.5D, true, true));
+        assertTrue(TankMath.canFillFromHeight(0, 10, 0.0D, true, true));
+        assertFalse(TankMath.canFillFromHeight(9, 10, 1.0D, true, true));
+        assertTrue(TankMath.canFillFromHeight(9, 10, 0.5D, false, true));
+    }
+
+    @Test
     void leakHardnessNeverProducesANonPositiveBound() {
         assertEquals(1, TankMath.leakHardnessTicks(0.0F));
         assertEquals(1, TankMath.leakHardnessTicks(-1.0F));

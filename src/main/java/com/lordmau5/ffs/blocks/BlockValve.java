@@ -69,6 +69,25 @@ public class BlockValve extends Block {
         super.breakBlock(world, x, y, z, block, metadata);
     }
 
+    @Override
+    public void onNeighborChange(IBlockAccess world, int x, int y, int z, int tileX, int tileY, int tileZ) {
+        TileEntity tile = world.getTileEntity(x, y, z);
+        if (tile instanceof TileEntityValve) {
+            ((TileEntityValve) tile).onNeighborChangedAt(tileX, tileY, tileZ);
+        }
+    }
+
+    @Override
+    public void onNeighborBlockChange(World world, int x, int y, int z, Block neighbor) {
+        TileEntity tile = world.getTileEntity(x, y, z);
+        if (tile instanceof TileEntityValve) {
+            TileEntityValve valve = (TileEntityValve) tile;
+            for (ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
+                valve.onNeighborChangedAt(x + dir.offsetX, y + dir.offsetY, z + dir.offsetZ);
+            }
+        }
+    }
+
     public boolean onBlockActivated(World world, int x, int y, int z, EntityPlayer player, int side, float hitX,
         float hitY, float hitZ) {
         if (super.onBlockActivated(world, x, y, z, player, side, hitX, hitY, hitZ)) {

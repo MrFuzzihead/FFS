@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import com.lordmau5.ffs.test.TestBootstrap;
+import com.lordmau5.ffs.util.Position3D;
 
 class TileEntityTankFrameTest {
 
@@ -29,6 +30,8 @@ class TileEntityTankFrameTest {
         assertNull(frame.getStoredBlock());
         assertEquals(0, frame.getStoredMetadata());
         assertNull(frame.getValve());
+        assertNull(frame.getValvePos());
+        assertFalse(frame.isOwnedByOther(null));
     }
 
     @Test
@@ -61,6 +64,8 @@ class TileEntityTankFrameTest {
         // No world is attached, so the master cannot resolve, but the position
         // must survive a save/load cycle instead of being silently lost.
         assertNull(frame.getValve());
+        assertEquals(new Position3D(10, 64, -3), frame.getValvePos());
+        assertFalse(frame.isOwnedByOther(null));
 
         NBTTagCompound out = new NBTTagCompound();
         frame.writeToNBT(out);
