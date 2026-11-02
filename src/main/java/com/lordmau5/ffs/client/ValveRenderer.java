@@ -57,13 +57,19 @@ public class ValveRenderer extends TileEntitySpecialRenderer implements ISimpleB
                     + (FancyFluidStorage.instance.TANK_RENDER_INSIDE ? 0 : 1);
                 int zSize = topDiag.getZ() - bottomDiag.getZ()
                     + (FancyFluidStorage.instance.TANK_RENDER_INSIDE ? 0 : 1);
-                if (valve.getCapacity() == 0 || valve.getFluidAmount() == 0) {
+                if (valve.getCapacity() == 0) {
                     return;
                 }
 
-                double fillPercentage = (double) valve.getFluidAmount() / valve.getCapacity();
-                if (fillPercentage > 0.0 && valve.getFluid() != null) {
-                    FluidStack fluid = valve.getFluid();
+                int capacity = valve.getCapacity();
+                FluidStack fluid = valve.getFluid();
+                int fluidAmount = fluid == null ? 0 : fluid.amount;
+                if (fluidAmount == 0) {
+                    return;
+                }
+
+                double fillPercentage = (double) fluidAmount / (double) capacity;
+                if (fillPercentage > 0.0) {
                     this.preGL();
                     IIcon flowing = FluidHelper.getFluidTexture(fluid.getFluid(), true);
                     IIcon still = FluidHelper.getFluidTexture(fluid.getFluid(), false);
@@ -164,10 +170,12 @@ public class ValveRenderer extends TileEntitySpecialRenderer implements ISimpleB
                                         t.addVertexWithUV(rX + 1 - xMaxOffset, renderHeight, rZ, stillMaxU, stillMinV);
                                     }
 
-                                t.addVertexWithUV(rX + 1, 0.01F, rZ + zMinOffset, stillMinU, stillMinV);
-                                t.addVertexWithUV(rX + 1, 0.01F, rZ + 1 - zMaxOffset, stillMinU, stillMaxV);
-                                t.addVertexWithUV(rX, 0.01F, rZ + 1 - zMaxOffset, stillMaxU, stillMaxV);
-                                t.addVertexWithUV(rX, 0.01F, rZ + zMinOffset, stillMaxU, stillMinV);
+                                if (rY == 0) {
+                                    t.addVertexWithUV(rX + 1, 0.01F, rZ + zMinOffset, stillMinU, stillMinV);
+                                    t.addVertexWithUV(rX + 1, 0.01F, rZ + 1 - zMaxOffset, stillMinU, stillMaxV);
+                                    t.addVertexWithUV(rX, 0.01F, rZ + 1 - zMaxOffset, stillMaxU, stillMaxV);
+                                    t.addVertexWithUV(rX, 0.01F, rZ + zMinOffset, stillMaxU, stillMinV);
+                                }
                             }
                         }
                     }

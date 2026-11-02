@@ -27,7 +27,6 @@ public class TileEntityTankFrame extends TileEntity implements IMoveCheck {
     private ExtendedBlock block;
     private Position3D valvePos;
     private TileEntityValve masterValve;
-    private boolean wantsUpdate = false;
 
     public void initialize(TileEntityValve masterValve, ExtendedBlock block) {
         this.masterValve = masterValve;
@@ -129,9 +128,12 @@ public class TileEntityTankFrame extends TileEntity implements IMoveCheck {
         }
     }
 
-    public void setValvePos(Position3D valvePos) {
+    /** @return true when the valve link actually changed */
+    public boolean setValvePos(Position3D valvePos) {
+        boolean changed = this.valvePos == null ? valvePos != null : !this.valvePos.equals(valvePos);
         this.valvePos = valvePos;
         this.masterValve = null;
+        return changed;
     }
 
     public Position3D getValvePos() {
@@ -230,18 +232,18 @@ public class TileEntityTankFrame extends TileEntity implements IMoveCheck {
     }
 
     public void markForUpdate() {
-        if (this.worldObj == null) {
-            this.wantsUpdate = true;
-        } else {
+        if (this.worldObj != null) {
             this.worldObj.markBlockForUpdate(this.xCoord, this.yCoord, this.zCoord);
         }
     }
 
-    public void updateEntity() {
-        if (this.wantsUpdate) {
-            this.markForUpdate();
-            this.wantsUpdate = false;
-        }
+    /**
+     * Frames only serve rendering and NBT data; they have no per-tick work. Avoiding
+     * the tick list removes thousands of idle updateEntity calls per large tank.
+     */
+    @Override
+    public boolean canUpdate() {
+        return false;
     }
 
     @Method(modid = "funkylocomotion")

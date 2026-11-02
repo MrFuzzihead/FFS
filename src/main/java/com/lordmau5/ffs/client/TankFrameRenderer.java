@@ -17,6 +17,9 @@ public class TankFrameRenderer implements ISimpleBlockRenderingHandler {
 
     public static final int id = RenderingRegistry.getNextAvailableRenderId();
 
+    private FrameBlockAccessWrapper wrapper;
+    private IBlockAccess wrapperBase;
+
     public void renderInventoryBlock(Block block, int metadata, int modelId, RenderBlocks renderer) {}
 
     public static int getPassForFrameRender(RenderBlocks rb) {
@@ -53,7 +56,13 @@ public class TankFrameRenderer implements ISimpleBlockRenderingHandler {
                 if (invalidRender) {
                     rb.renderStandardBlock(renderBlock, x, y, z);
                 } else {
-                    rb.blockAccess = new FrameBlockAccessWrapper(origBa);
+                    // Reuse the stateless wrapper: allocating one per frame block per
+                    // render pass causes tens of thousands of short-lived objects.
+                    if (this.wrapper == null || this.wrapperBase != origBa) {
+                        this.wrapperBase = origBa;
+                        this.wrapper = new FrameBlockAccessWrapper(origBa);
+                    }
+                    rb.blockAccess = this.wrapper;
 
                     try {
                         rb.renderBlockByRenderType(renderBlock, x, y, z);

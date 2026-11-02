@@ -87,6 +87,22 @@ class TileEntityTankFrameTest {
     }
 
     @Test
+    void framesDoNotTick() {
+        assertFalse(new TileEntityTankFrame().canUpdate());
+    }
+
+    @Test
+    void valvePositionChangesAreDetected() {
+        TileEntityTankFrame frame = new TileEntityTankFrame();
+
+        assertTrue(frame.setValvePos(new Position3D(1, 2, 3)));
+        assertFalse(frame.setValvePos(new Position3D(1, 2, 3)));
+        assertTrue(frame.setValvePos(new Position3D(4, 5, 6)));
+        assertTrue(frame.setValvePos(null));
+        assertFalse(frame.setValvePos(null));
+    }
+
+    @Test
     void worldDependentMethodsAreSafeWithoutAWorld() {
         TileEntityTankFrame frame = new TileEntityTankFrame();
 

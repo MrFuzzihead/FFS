@@ -95,6 +95,15 @@ public final class TankMath {
         return (double) valvePosition + 0.5D >= surface;
     }
 
+    /** Throttle helper for tile-entity sync; kept pure so it is unit-testable. */
+    public static boolean shouldSyncFluid(long now, long lastSync, int minIntervalTicks) {
+        if (lastSync < 0L) {
+            return true;
+        }
+
+        return now - lastSync >= Math.max(1, minIntervalTicks);
+    }
+
     /**
      * Number of 1-in-N ticks used by the leak roll. Hardness 0, negative and NaN
      * would crash {@code Random#nextInt(int)}; they collapse to 1 tick.

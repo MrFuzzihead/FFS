@@ -109,4 +109,15 @@ class TankMathTest {
         assertTrue(TankMath.isValidLeakHardness(1.0F));
         assertFalse(TankMath.isValidLeakHardness(1.01F));
     }
+
+    @Test
+    void fluidSyncIsThrottled() {
+        assertTrue(TankMath.shouldSyncFluid(0, -1, 2));
+        assertTrue(TankMath.shouldSyncFluid(10, 0, 2));
+        assertFalse(TankMath.shouldSyncFluid(1, 0, 2));
+        assertTrue(TankMath.shouldSyncFluid(2, 0, 2));
+        assertFalse(TankMath.shouldSyncFluid(0, 0, 0));
+        assertTrue(TankMath.shouldSyncFluid(1, 0, 0));
+        assertFalse(TankMath.shouldSyncFluid(0, 10, 2));
+    }
 }

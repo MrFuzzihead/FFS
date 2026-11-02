@@ -161,7 +161,7 @@ the implementation. Work is organised in review-driven batches (see
 
 - Modernised build system for 2026 (GTNH convention plugin, Gradle wrapper,
   auto-provisioned JDK, GitHub Actions CI)
-- Review document and test harness (JUnit 5 + `headlessTest`, 40 tests)
+- Review document and test harness (JUnit 5 + `headlessTest`, 53 tests)
 - Safety fixes: explosion handling, client-side container guard, NBT robustness,
   removed-mod block handling, leak-hardness crash, capacity overflow, fire config,
   `canFill` units, null-valve GUI guard
@@ -174,14 +174,19 @@ the implementation. Work is organised in review-driven batches (see
   collection per tank per tick, and correct auto-output/fill rules for gases
 - Correct chunk-rectangle loading, fixed RemainInMotion rotation, and CC peripheral
   equality
+- Performance: frame tile entities no longer tick; tank reloads no longer mark every
+  frame for update; fluid sync is throttled; the interior is a packed `LongSet`; the
+  fluid renderer draws the bottom once; the tank-frame wrapper is reused;
+  precipitation height is cached; and burn/leak use the world RNG
+- Networking: packets are marshalled onto the server thread and validate reach and
+  valve-name length
 
 **Planned**
 
-- Performance: frame ticking, packet storm, map-free tank geometry, surface-only
-  fluid rendering
-- Renderer/GUI fixes (face/normal mapping, render-pass state, scissor math, GL state)
+- Remaining renderer/GUI fixes (face/normal mapping, render-pass state, scissor math,
+  GL state)
 - Packaging fixes (lowercase `ffs` id and resource domain, optional dependency scopes)
-- Architecture split of the 1,415-line `TileEntityValve`
+- Architecture split of the 1,415-line `TileEntityValve` and the transient cuboid scan
 
 ## Credits
 

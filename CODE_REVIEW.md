@@ -25,10 +25,20 @@ The harness is:
 | 0 | Review doc, README, JUnit 5 + `headlessTest` task, pure-helper extraction | done |
 | 1 | P0 safety fixes: explosions, client-side containers, NBT, null blocks, leak crash, capacity overflow, fire config, `canFill` units, GUI null | done |
 | 2 | P1 correctness: tank ownership (shared walls/edge valves/stale slaves), `breakTank` fluid, auto-output per tank, interior invalidation, geometry (`length[]` reset, MAX_SIZE), fluid-handler contract, rain/negative density, RiM rotation, CC equality | done |
-| 3 | P2 performance: `canUpdate()=false` for frames, packet storm, master cache, map-free geometry, surface-only fluid renderer, wrapper reuse, precipitation cache, RNG reuse | planned |
+| 3 | P2 performance: frame ticking, packet storm, master/fluid caches, retained-map removal (LongSet), renderer bottom-face fix + wrapper reuse, precipitation cache, RNG reuse, server-thread packet queue/validation | done |
 | 4 | Renderer/GUI: face/normal fixes, render-pass global hack, scissor math, GL state restore, bounding boxes, lighting | planned |
 | 5 | Build/packaging: `ffs` casing, resource domain, `mcmod.info`, optional dependency scopes, TE registry names, tests in CI | planned |
 | 6 | Architecture: split `TileEntityValve` into structure/fluid/hazards/peripheral classes; shared CC/OC command layer | planned |
+
+### Test coverage shipped with batch 3
+
+`./gradlew headlessTest` now runs 53 JUnit 5 tests. Batch 3 added:
+
+- `LongSetTest` (5) — add/contains/duplicates, resize, signed coordinate packing.
+- `PacketValidationTest` (2) — reach boundary and valve-name length rules.
+- `ServerTaskQueueTest` (3) — FIFO drain, null task, failed task isolation.
+- `TankMathTest` — fluid sync throttle.
+- `TileEntityTankFrameTest` — `canUpdate()` is false, valve-position change detection.
 
 ### Test coverage shipped with batch 2
 
@@ -234,9 +244,9 @@ and the GUI.
 - **Fixed (batch 2):** `RiMEventHandler.tileRotation` now calls
   `getInside().getRotation(event.axis)` once instead of rotating around the axis
   twice. Verify the RiM mod id.
-- Packet handlers do not validate distance/permissions and the valve name has no
-  length limit. They also run on the Netty pipeline; schedule world access onto the
-  server thread.
+- **Fixed (batch 3):** packet handlers are scheduled onto the server thread via
+  `ServerTaskQueue` (`ServerTickEvent`) and validate reach + valve-name length before
+  touching the world. OC `invoke` still returns `null` for unknown methods.
 
 ### Rendering
 - `ValveRenderer.renderInventoryBlock` uses mismatched face methods (bottom twice,
@@ -249,8 +259,8 @@ and the GUI.
 - Negative-density alpha is set after the vertices are added.
 - GUI scissor mixes `getScaleFactor()` with `gameSettings.guiScale` and does not flip
   Y; wrong for auto GUI scale.
-- `TankFrameRenderer` allocates a wrapper per block per pass; reuse it. It also
-  silently renders stone on exceptions; log them.
+- `TankFrameRenderer` allocated a wrapper per block per pass; **fixed (batch 3)** — the
+  stateless wrapper is reused. It still silently renders stone on exceptions; log them.
 - `BlockValve.isOpaqueCube() == false` gives the valve `lightOpacity = 0` (light
   leaks through a solid metal block).
 - `getRenderBoundingBox` returns the huge tank AABB for slaves too; return a small box
@@ -262,25 +272,53 @@ and the GUI.
 
 1. **`TileEntityTankFrame` ticks every tick.** It does not override `canUpdate()`, so
    every frame TE in a large tank (`~1,500–5,800`) is ticked every tick to test a flag
-   that is almost never set. Override `canUpdate()`.
+   that is almost never set. **Fixed:** `canUpdate()` returns false; the dead
+   `wantsUpdate`/`updateEntity` path was removed.
 2. **Packet storm on rebuild.** `setupTank` → `updateBlockAndNeighbors()` →
    `markForUpdate(false)` marks **every frame** for update; `markBlockForUpdate` sends
-   one `S35` TE packet per frame. On chunk load a large tank sends thousands of packets.
-   Initialise frames before they are synced and mark only new/changed frames.
+   one `S35` TE packet per frame. **Fixed:** frames are only marked when their valve
+   link changes; the per-tick init update was removed; fluid sync is throttled to one
+   packet per 2 ticks; new frames use the packet already queued by `setBlock`.
 3. **`getMaster()` is uncached** whenever `masterValvePos != null`; `isValid()`,
-   `getFluid()`, `getCapacity()` call it repeatedly in hot paths. Cache and invalidate.
-4. **`getPrecipitationHeight` per tick per water valve** — cache it.
+   `getFluid()`, `getCapacity()` call it repeatedly in hot paths. **Fixed:** the master
+   is cached (invalidated when the TE is invalid), and `isValid`/`getFluid`/
+   `getCapacity` perform one lookup.
+4. **`getPrecipitationHeight` per tick per water valve** — **fixed:** cached per valve
+   for 20 ticks.
 5. **Full-cuboid maps.** `getBlocksBetweenPoints` allocates a `Position3D` +
-   `ExtendedBlock` for every block in the cuboid, and `TileEntityValve.maps` retains
+   `ExtendedBlock` for every block in the cuboid, and `TileEntityValve.maps` retained
    all three maps for the tank's lifetime although only `maps[2]` is read later.
-   Replace with a `TankStructure` of coordinate lists/bitsets.
-6. **Fluid renderer overdraw.** Four side quads + a bottom quad per interior cell
-   (~108k quads for a 30³ interior). Draw only the top surface, the four outer walls
-   and one bottom quad.
-7. **Per-tick allocations / RNG**: `new Random()`, new `ArrayList`s and `FluidStack`s
-   in hot paths; use `worldObj.rand` and cached buffers.
-8. **Block update flags**: `setupTank` uses flag 3 (neighbour updates) for every edge
-   block; flag 2 is enough for the shell.
+   **Mostly fixed:** the maps are now local to `setupTank`; only the interior survives
+   as a packed `LongSet` (relative coordinates, no retained objects). The transient
+   cuboid scan itself remains for batch 6's `TankStructure` refactor.
+6. **Fluid renderer overdraw.** The bottom face was emitted for **every** height layer
+   (`xSize × zSize × height` quads). **Fixed:** it is emitted only for `rY == 0`; the
+   side faces were already boundary-only.
+7. **Per-tick allocations / RNG**: **partially fixed** — burn/leak use `worldObj.rand`,
+   the tank-frame wrapper is reused, fluid sync is throttled. Some short-lived lists
+   remain in the build/hazard paths.
+8. **Block update flags**: edge conversion now uses flag 2 instead of 3 (no neighbour
+   updates for immutable frames).
+
+### Tank size after the performance work
+
+After batch 3 the per-tank costs are:
+
+- **Tick:** frame TEs do not tick; only valves tick (auto-output/rain/hazards).
+- **Memory:** ~8 bytes per interior position (`LongSet`), plus one TE per shell block.
+- **Build/load:** one O(volume) scan, and one packet per newly formed frame (no repeat
+  storm on reload).
+- **Render:** O(surface area) quads (top + four walls), not O(volume).
+
+Going from a 13-wide axis to 16 raises volume by ~1.9× and shell area by ~1.5×;
+13→21 raises volume by ~4.2× and shell area by ~2.6×. Since batch 2 made `MAX_SIZE`
+the true whole-tank limit, a default of **16** is defensible as a follow-up: it
+restores the old effective 16-wide limit (the pre-batch-2 code allowed up to 16 with
+the default 13) while keeping the documented semantics. Larger defaults (21/32)
+should stay opt-in because memory, build time and formation packets grow with volume.
+Recommendation: ship the performance work first, profile a 16-wide tank, then raise
+the default in a separate change (and keep 32 as the opt-in maximum).
+
 
 ---
 
