@@ -31,10 +31,19 @@ The harness is:
 | 6 | Architecture: split `TileEntityValve` into structure/fluid/hazards/peripheral classes; shared CC/OC command layer | done |
 | 7 | License attribution/packaging, WAILA 1.19.34 data/config/advanced tooltip, GUI localization and name sync | done |
 | 8 | NBT/auto-output thinning: `ValveState`/`ValveNbt`, `AutoOutputState`/`TankAutoOutput` | done |
+| 9 | Ownership/setup/break and peripheral-argument extraction: `TankOwnership`, `TankBuilder`, `ValveCommandAdapter` | done |
+
+### Test coverage shipped with batch 9
+
+`./gradlew headlessTest` now runs 101 JUnit 5 tests. Batch 9 added:
+
+- `TankOwnershipTest` (3) - master flag/link lifecycle, valve lists, name filtering.
+- `ValveCommandAdapterTest` (4) - read-only commands, auto-output by name, invalid
+  arguments/methods, null arguments.
 
 ### Test coverage shipped with batch 8
 
-`./gradlew headlessTest` now runs 94 JUnit 5 tests. Batch 8 added:
+`./gradlew headlessTest` runs 94 JUnit 5 tests after batch 8. Batch 8 added:
 
 - `AutoOutputStateTest` (2) - toggle and pending/throttled sync consumption.
 - `TankAutoOutputTest` (1) - detached-valve safety.
@@ -391,8 +400,13 @@ still be a deliberate server-owner choice because frame count/memory grow with v
   were extracted from `TileEntityValve`.
 - **Fixed (batch 8):** `ValveState`/`ValveNbt` own the save/load and compact client
   sync, and `AutoOutputState`/`TankAutoOutput` own the flag, sync throttle and
-  neighbour push. `TileEntityValve` is now ~1,220 lines. Remaining optional work:
-  ownership/setup/break and peripheral argument adapters.
+  neighbour push.
+- **Fixed (batch 9):** `TankOwnership` owns master/slave links and valve lists,
+  `TankBuilder` owns formation/teardown (`TankStructure`-based), and
+  `ValveCommandAdapter` owns the shared CC/OC argument handling. `TileEntityValve`
+  is now ~700 lines and is effectively NBT/fluid/hazard/ownership coordination.
+  Remaining optional polish: `TankReadout`/formatting helpers, `Position3D` finals,
+  and broader world-level tests.
 - **Fixed (batch 6):** `Map<Position3D, ExtendedBlock>[]` was replaced by typed shell
   lists plus a packed `LongSet` interior.
 - Config: capacity is still saturated `int` (the 1.7.10 `IFluidTank` API is `int`);
