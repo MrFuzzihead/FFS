@@ -40,6 +40,8 @@ automated test suite.
   the same fluid, capacity, and auto-output state.
 - **Automatic shape validation** — the valve walks the six cardinal directions,
   validates the shell, and refuses malformed or interrupted tanks.
+- **Configurable tank size** — default `MAX_SIZE` is 16 blocks per axis including the
+  frame (3–32 in the config; 32 is opt-in for large servers).
 - **Fluid containers and pipes** — right-click with a bucket or any
   `IFluidContainerItem` to fill/drain; BuildCraft pipes, comparators, and hoppers work
   out of the box.
@@ -161,7 +163,7 @@ the implementation. Work is organised in review-driven batches (see
 
 - Modernised build system for 2026 (GTNH convention plugin, Gradle wrapper,
   auto-provisioned JDK, GitHub Actions CI)
-- Review document and test harness (JUnit 5 + `headlessTest`, 61 tests)
+- Review document and test harness (JUnit 5 + `headlessTest`, 70 tests)
 - Safety fixes: explosion handling, client-side container guard, NBT robustness,
   removed-mod block handling, leak-hardness crash, capacity overflow, fire config,
   `canFill` units, null-valve GUI guard
@@ -185,10 +187,14 @@ the implementation. Work is organised in review-driven batches (see
   gas volumes use the same partial-column math as liquids; the GUI scissor is
   Y-flipped and bottom-aligned; the valve no longer leaks light; and slave render
   bounds are small
+- Packaging: lowercase `ffs` mod ID and resource domain (fixes Linux/macOS assets),
+  `after:` metadata for optional mods, optional dependencies no longer published as
+  hard runtime deps, namespaced tile-entity IDs with legacy aliases, a named tank
+  frame, and a default `MAX_SIZE` of 16 (32 remains opt-in), with a one-time
+  `FFS.cfg` → `ffs.cfg` migration
 
 **Planned**
 
-- Packaging fixes (lowercase `ffs` id and resource domain, optional dependency scopes)
 - Architecture split of the 1,415-line `TileEntityValve` and the transient cuboid scan
 
 ## Credits

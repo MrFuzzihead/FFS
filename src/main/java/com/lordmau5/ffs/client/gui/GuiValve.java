@@ -18,10 +18,11 @@ import com.lordmau5.ffs.network.FFSPacket;
 import com.lordmau5.ffs.network.NetworkHandler;
 import com.lordmau5.ffs.tile.TileEntityValve;
 import com.lordmau5.ffs.util.GenericUtil;
+import com.lordmau5.ffs.util.ModNames;
 
 public class GuiValve extends GuiScreen {
 
-    protected static final ResourceLocation tex = new ResourceLocation("FFS:textures/gui/gui_tank.png");
+    protected static final ResourceLocation tex = new ResourceLocation(ModNames.resource("textures/gui/gui_tank.png"));
     protected static final int AUTO_FLUID_OUTPUT_BTN_ID = 23442;
     TileEntityValve valve;
     boolean isFrame;

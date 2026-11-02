@@ -21,6 +21,7 @@ import com.lordmau5.ffs.client.ValveFace;
 import com.lordmau5.ffs.client.ValveRenderer;
 import com.lordmau5.ffs.tile.TileEntityValve;
 import com.lordmau5.ffs.util.GenericUtil;
+import com.lordmau5.ffs.util.ModNames;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -30,7 +31,7 @@ public class BlockValve extends Block {
     public BlockValve() {
         super(Material.iron);
         this.setBlockName("blockValve");
-        this.setBlockTextureName("FFS:blockValve");
+        this.setBlockTextureName(ModNames.resource("blockValve"));
         this.setCreativeTab(CreativeTabs.tabRedstone);
         this.setHardness(5.0F);
         this.setResistance(10.0F);

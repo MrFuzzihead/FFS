@@ -27,12 +27,24 @@ The harness is:
 | 2 | P1 correctness: tank ownership (shared walls/edge valves/stale slaves), `breakTank` fluid, auto-output per tank, interior invalidation, geometry (`length[]` reset, MAX_SIZE), fluid-handler contract, rain/negative density, RiM rotation, CC equality | done |
 | 3 | P2 performance: frame ticking, packet storm, master/fluid caches, retained-map removal (LongSet), renderer bottom-face fix + wrapper reuse, precipitation cache, RNG reuse, server-thread packet queue/validation | done |
 | 4 | Renderer/GUI: face/normal fixes, render-pass global hack, scissor math, GL state restore, bounding boxes, lighting | done |
-| 5 | Build/packaging: `ffs` casing, resource domain, `mcmod.info`, optional dependency scopes, TE registry names, tests in CI | planned |
+| 5 | Build/packaging: `ffs` casing, resource domain, `mcmod.info`, optional dependency scopes, TE registry names, tests in CI | done |
 | 6 | Architecture: split `TileEntityValve` into structure/fluid/hazards/peripheral classes; shared CC/OC command layer | planned |
+
+### Test coverage shipped with batch 5
+
+`./gradlew headlessTest` now runs 70 JUnit 5 tests. Batch 5 added:
+
+- `ModNamesTest` (2) — lowercase modid/resource domain and namespaced TE names with
+  legacy aliases.
+- `ConfigDefaultsTest` (1) — the documented defaults, including `MAX_SIZE = 16`.
+- `BlockTankFrameTest` (1) — the technical block has a name, tile entity and texture.
+- `PackagingTest` (2) — processed `mcmod.info` (lowercase id, soft dependencies) and
+  the lowercase asset domain for lang/sounds.
+- `ConfigMigrationTest` (3) — legacy config copy, no overwrite, missing legacy file.
 
 ### Test coverage shipped with batch 4
 
-`./gradlew headlessTest` now runs 61 JUnit 5 tests. Batch 4 added:
+`./gradlew headlessTest` runs 61 JUnit 5 tests after batch 4. Batch 4 added:
 
 - `FluidRenderMathTest` (4) — fill clamping, interior column height, visible layer
   count, layer heights (including the 0.01 minimum bottom layer).
@@ -335,7 +347,8 @@ restores the old effective 16-wide limit (the pre-batch-2 code allowed up to 16 
 the default 13) while keeping the documented semantics. Larger defaults (21/32)
 should stay opt-in because memory, build time and formation packets grow with volume.
 Recommendation: ship the performance work first, profile a 16-wide tank, then raise
-the default in a separate change (and keep 32 as the opt-in maximum).
+the default in a separate change (and keep 32 as the opt-in maximum). **Shipped in
+batch 5:** the default is now 16; 32 remains the opt-in maximum.
 
 
 ---
@@ -359,21 +372,25 @@ the default in a separate change (and keep 32 as the opt-in maximum).
 
 ## 5. Build / packaging / compatibility
 
-- **Mod ID case mismatch**: `gradle.properties` uses `modId = ffs`; the code uses
-  `"FFS"` / `@Instance("FFS")` and `mcmod.info` substitutes `"modid": "ffs"`.
-  Use lowercase `ffs` everywhere.
-- **Resource domain case**: textures/GUI/lang/sounds use `"FFS:"` but the folder is
-  `assets/ffs/`. `ResourceLocation` does not lowercase the domain, so these assets
-  are missing on case-sensitive filesystems (Linux/macOS clients). Use `"ffs:"`.
-- `mcmod.info` lists optional mods as hard dependencies; use `after:` and add RiM.
-- `dependencies.gradle` uses `implementation` for optional integrations; use
-  `compileOnly` + `runtimeOnlyNonPublishable` / `devOnlyNonPublishable`.
-- Namespace TE registry IDs (`ffs:tileEntityValve`).
-- `BlockTankFrame` has no `setBlockName` and a registered ItemBlock with a valve
-  texture; hide it or name it.
-- License is CC BY-NC-SA 3.0 (per `LICENSE.md`), which is unusual for code (no
+- **Fixed (batch 5):** the mod ID, `@Instance`, resource domain, textures, GUI,
+  lang and sounds now all use lowercase `ffs` (`ModNames` is the single source of
+  truth). The lowercase resource domain fixes missing assets on Linux/macOS.
+- **Fixed (batch 5):** `mcmod.info` lists optional mods as `after:` dependencies and
+  includes RemainInMotion (`JAKJ_RedstoneInMotion`).
+- **Fixed (batch 5):** optional integrations are `compileOnly` +
+  `runtimeOnlyNonPublishable` + `testImplementation`; they are no longer published as
+  hard runtime dependencies.
+- **Fixed (batch 5):** tile entities are saved as `ffs:tileEntityValve` /
+  `ffs:tileEntityTankFrame` with the legacy ids registered as load-time alternatives,
+  so existing worlds keep working.
+- **Fixed (batch 5):** `BlockTankFrame` has a block name and a lang entry.
+- **Fixed (batch 5):** `MAX_SIZE` now defaults to **16** (whole tank including the
+  frame), restoring the pre-review effective 16-wide default. 32 remains opt-in. A
+  legacy `FFS.cfg` is copied to `ffs.cfg` once so existing settings survive the id
+  change.
+- License is still CC BY-NC-SA 3.0 (per `LICENSE.md`), which is unusual for code (no
   patent grant, non-commercial restriction). Consider MIT/Apache-2.0.
-- No tests existed before this work; add the JUnit 5 suite and keep it in CI.
+- The JUnit 5 suite and `headlessTest` are now part of CI (`build` runs the tests).
 
 ---
 

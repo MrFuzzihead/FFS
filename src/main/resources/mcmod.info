@@ -16,11 +16,12 @@
     "screenshots": [ ],
     "parent": "",
     "dependencies": [
-        "waila",
-        "BuildCraftAPI|Transport",
-        "chisel",
-        "OpenComputers",
-        "ComputerCraft",
-        "funkylocomotion"
+        "after:waila",
+        "after:BuildCraftAPI|Transport",
+        "after:chisel",
+        "after:OpenComputers",
+        "after:ComputerCraft",
+        "after:funkylocomotion",
+        "after:JAKJ_RedstoneInMotion"
     ]
 }]

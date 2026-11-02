@@ -7,6 +7,7 @@ import com.lordmau5.ffs.client.TankFrameRenderer;
 import com.lordmau5.ffs.client.ValveRenderer;
 import com.lordmau5.ffs.compat.WailaPluginTank;
 import com.lordmau5.ffs.tile.TileEntityValve;
+import com.lordmau5.ffs.util.ModNames;
 
 import cpw.mods.fml.client.registry.ClientRegistry;
 import cpw.mods.fml.client.registry.RenderingRegistry;
@@ -33,9 +34,11 @@ public class ClientProxy extends CommonProxy {
 
     @Override
     public void registerIcons(IIconRegister iR) {
-        this.tex_Valve = iR.registerIcon("FFS:blockValve");
-        this.tex_ValveItem = iR.registerIcon("FFS:blockValve_Item");
-        this.tex_SlaveValve = new IIcon[] { iR.registerIcon("FFS:tankValve_0"), iR.registerIcon("FFS:tankValve_1") };
-        this.tex_MasterValve = new IIcon[] { iR.registerIcon("FFS:tankMaster_0"), iR.registerIcon("FFS:tankMaster_1") };
+        this.tex_Valve = iR.registerIcon(ModNames.resource("blockValve"));
+        this.tex_ValveItem = iR.registerIcon(ModNames.resource("blockValve_Item"));
+        this.tex_SlaveValve = new IIcon[] { iR.registerIcon(ModNames.resource("tankValve_0")),
+            iR.registerIcon(ModNames.resource("tankValve_1")) };
+        this.tex_MasterValve = new IIcon[] { iR.registerIcon(ModNames.resource("tankMaster_0")),
+            iR.registerIcon(ModNames.resource("tankMaster_1")) };
     }
 }

@@ -30,6 +30,7 @@ import com.lordmau5.ffs.blocks.BlockTankFrame;
 import com.lordmau5.ffs.util.ExtendedBlock;
 import com.lordmau5.ffs.util.GenericUtil;
 import com.lordmau5.ffs.util.LongSet;
+import com.lordmau5.ffs.util.ModNames;
 import com.lordmau5.ffs.util.NbtHelper;
 import com.lordmau5.ffs.util.Position3D;
 import com.lordmau5.ffs.util.TankGeometry;
@@ -283,7 +284,7 @@ public class TileEntityValve extends TileEntity
                                         this.xCoord + 0.5,
                                         this.yCoord + 0.5,
                                         this.zCoord + 0.5,
-                                        "FFS:fire",
+                                        ModNames.resource("fire"),
                                         1.0F,
                                         this.worldObj.rand.nextFloat() * 0.1F + 0.9F);
                                 }

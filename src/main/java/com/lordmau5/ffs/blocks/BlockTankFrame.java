@@ -26,6 +26,7 @@ import com.lordmau5.ffs.client.TankFrameRenderer;
 import com.lordmau5.ffs.tile.TileEntityTankFrame;
 import com.lordmau5.ffs.tile.TileEntityValve;
 import com.lordmau5.ffs.util.GenericUtil;
+import com.lordmau5.ffs.util.ModNames;
 
 import cpw.mods.fml.common.Optional.Interface;
 import cpw.mods.fml.common.Optional.Method;
@@ -35,7 +36,8 @@ public class BlockTankFrame extends Block implements IFacade {
 
     public BlockTankFrame() {
         super(Material.rock);
-        this.setBlockTextureName("FFS:blockValve");
+        this.setBlockName("blockTankFrame");
+        this.setBlockTextureName(ModNames.resource("blockValve"));
     }
 
     public boolean hasTileEntity(int metadata) {
