@@ -163,7 +163,7 @@ the implementation. Work is organised in review-driven batches (see
 
 - Modernised build system for 2026 (GTNH convention plugin, Gradle wrapper,
   auto-provisioned JDK, GitHub Actions CI)
-- Review document and test harness (JUnit 5 + `headlessTest`, 87 tests)
+- Review document and test harness (JUnit 5 + `headlessTest`, 94 tests)
 - Safety fixes: explosion handling, client-side container guard, NBT robustness,
   removed-mod block handling, leak-hardness crash, capacity overflow, fire config,
   `canFill` units, null-valve GUI guard
@@ -202,11 +202,14 @@ the implementation. Work is organised in review-driven batches (see
   head/body/tail sections.
 - GUI: localized strings, change-only valve-name packets, correct Escape/key
   handling, and cached fluid/capacity reads.
+- Thinning: `ValveState`/`ValveNbt` now own save/load and compact client sync;
+  `AutoOutputState`/`TankAutoOutput` own the flag, sync throttle and neighbour push.
+  `TileEntityValve` dropped from ~1,314 to ~1,220 lines.
 
 **Planned**
 
-- Remaining: thinning the NBT/auto-output/peripheral adapter code in
-  `TileEntityValve` (planned as the next batch).
+- Remaining (optional): ownership/setup/break and peripheral argument adapters in
+  `TileEntityValve`.
 
 ## Credits
 

@@ -30,10 +30,19 @@ The harness is:
 | 5 | Build/packaging: `ffs` casing, resource domain, `mcmod.info`, optional dependency scopes, TE registry names, tests in CI | done |
 | 6 | Architecture: split `TileEntityValve` into structure/fluid/hazards/peripheral classes; shared CC/OC command layer | done |
 | 7 | License attribution/packaging, WAILA 1.19.34 data/config/advanced tooltip, GUI localization and name sync | done |
+| 8 | NBT/auto-output thinning: `ValveState`/`ValveNbt`, `AutoOutputState`/`TankAutoOutput` | done |
+
+### Test coverage shipped with batch 8
+
+`./gradlew headlessTest` now runs 94 JUnit 5 tests. Batch 8 added:
+
+- `AutoOutputStateTest` (2) - toggle and pending/throttled sync consumption.
+- `TankAutoOutputTest` (1) - detached-valve safety.
+- `ValveNbtTest` (4) - master/slave round-trips, missing tags and state codec.
 
 ### Test coverage shipped with batch 7
 
-`./gradlew headlessTest` now runs 87 JUnit 5 tests. Batch 7 added:
+`./gradlew headlessTest` runs 87 JUnit 5 tests after batch 7. Batch 7 added:
 
 - `LicenseNoticeTest` (3) - attribution/source/license URI, upstream license text and
   jar packaging.
@@ -379,9 +388,11 @@ still be a deliberate server-owner choice because frame count/memory grow with v
 
 - **Fixed (batch 6):** `TankStructure` (direct scan), `TankFluidHandler` (fill/drain
   rules), `TankHazards` (rain/burn/leak) and `ValveCommands` (shared CC/OC semantics)
-  were extracted from `TileEntityValve`. The block entity is still ~1,300 lines because
-  it owns NBT, auto-output and the two peripheral adapters; further thinning is
-  optional.
+  were extracted from `TileEntityValve`.
+- **Fixed (batch 8):** `ValveState`/`ValveNbt` own the save/load and compact client
+  sync, and `AutoOutputState`/`TankAutoOutput` own the flag, sync throttle and
+  neighbour push. `TileEntityValve` is now ~1,220 lines. Remaining optional work:
+  ownership/setup/break and peripheral argument adapters.
 - **Fixed (batch 6):** `Map<Position3D, ExtendedBlock>[]` was replaced by typed shell
   lists plus a packed `LongSet` interior.
 - Config: capacity is still saturated `int` (the 1.7.10 `IFluidTank` API is `int`);

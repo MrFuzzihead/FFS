@@ -14,7 +14,6 @@ import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.fluids.Fluid;
-import net.minecraftforge.fluids.FluidRegistry;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.FluidTankInfo;
 import net.minecraftforge.fluids.IFluidHandler;
@@ -25,7 +24,6 @@ import com.lordmau5.ffs.blocks.BlockTankFrame;
 import com.lordmau5.ffs.util.ExtendedBlock;
 import com.lordmau5.ffs.util.GenericUtil;
 import com.lordmau5.ffs.util.LongSet;
-import com.lordmau5.ffs.util.NbtHelper;
 import com.lordmau5.ffs.util.Position3D;
 import com.lordmau5.ffs.util.TankGeometry;
 import com.lordmau5.ffs.util.TankMath;
@@ -64,14 +62,12 @@ public class TileEntityValve extends TileEntity
     private boolean isMaster;
     private Position3D masterValvePos;
     public boolean initiated;
-    private boolean needsUpdate;
     public int tankHeight = 0;
     public int valveHeightPosition = 0;
-    private boolean autoOutput;
+    private final AutoOutputState autoOutput = new AutoOutputState();
     private int randomBurnTicks = 100;
     private int randomLeakTicks = 1200;
     private long lastRainTick = -1L;
-    private long lastFluidSyncTick = -1L;
     private int cachedPrecipHeight = -1;
     private long lastPrecipCheck = -1L;
     private boolean building;
@@ -103,15 +99,13 @@ public class TileEntityValve extends TileEntity
 
     public void updateEntity() {
         if (!this.worldObj.isRemote) {
-            if (this.needsUpdate) {
+            if (this.autoOutput.isPendingSync()) {
                 TileEntityValve master = this.getMaster();
                 long now = this.worldObj.getTotalWorldTime();
-                if (master != null && TankMath.shouldSyncFluid(now, this.lastFluidSyncTick, 2)) {
+                if (master != null && this.autoOutput.consumeSync(now, 2)) {
                     // Throttle fluid sync: pipes can change the tank every tick, but the
                     // client only needs a handful of updates per second.
                     master.markForUpdate(true);
-                    this.lastFluidSyncTick = now;
-                    this.needsUpdate = false;
                 }
             }
 
@@ -143,40 +137,7 @@ public class TileEntityValve extends TileEntity
 
             if (this.isValid()) {
                 if (this.getFluid() != null) {
-                    if ((this.getAutoOutput() || this.valveHeightPosition == 0) && this.getFluidAmount() != 0) {
-                        float height = (float) this.getFluidAmount() / this.getCapacity();
-                        boolean isNegativeDensity = this.getFluid()
-                            .getFluid()
-                            .getDensity(this.getFluid()) < 0;
-                        if (GenericUtil
-                            .canAutoOutput(height, this.getTankHeight(), this.valveHeightPosition, isNegativeDensity)) {
-                            ForgeDirection out = this.inside.getOpposite();
-                            TileEntity tile = this.worldObj.getTileEntity(
-                                this.xCoord + out.offsetX,
-                                this.yCoord + out.offsetY,
-                                this.zCoord + out.offsetZ);
-                            if (tile != null && (tile instanceof TileEntityValve || this.getAutoOutput()
-                                || this.valveHeightPosition != 0)) {
-                                int maxAmount = 0;
-                                if (tile instanceof TileEntityValve) {
-                                    maxAmount = 1000;
-                                } else if (tile instanceof IFluidHandler) {
-                                    maxAmount = 50;
-                                }
-
-                                if (maxAmount != 0) {
-                                    IFluidHandler handler = (IFluidHandler) tile;
-                                    FluidStack fillStack = this.getFluid()
-                                        .copy();
-                                    fillStack.amount = Math.min(this.getFluidAmount(), maxAmount);
-                                    int accepted = handler.fill(this.inside, fillStack, true);
-                                    if (accepted > 0) {
-                                        this.drain(accepted, true);
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    TankAutoOutput.tick(this);
 
                     TankHazards.tickRain(this);
 
@@ -248,7 +209,7 @@ public class TileEntityValve extends TileEntity
     }
 
     public void setNeedsUpdate() {
-        this.needsUpdate = true;
+        this.autoOutput.requestSync();
     }
 
     public int getTankHeight() {
@@ -814,7 +775,15 @@ public class TileEntityValve extends TileEntity
         }
 
         TileEntityValve master = this.getMaster();
-        return master != null && master.autoOutput;
+        return master != null && master.autoOutput.isEnabled();
+    }
+
+    boolean getAutoOutputFlag() {
+        return this.autoOutput.isEnabled();
+    }
+
+    void setAutoOutputFlag(boolean enabled) {
+        this.autoOutput.setEnabled(enabled);
     }
 
     public void setAutoOutput(boolean autoOutput) {
@@ -824,7 +793,7 @@ public class TileEntityValve extends TileEntity
             return;
         }
 
-        this.autoOutput = autoOutput;
+        this.autoOutput.setEnabled(autoOutput);
         if (this.worldObj != null) {
             this.updateBlockAndNeighbors(true);
         }
@@ -832,91 +801,21 @@ public class TileEntityValve extends TileEntity
 
     public void readFromNBT(NBTTagCompound tag) {
         super.readFromNBT(tag);
-        this.isValid = tag.getBoolean("isValid");
-        this.inside = ForgeDirection.getOrientation(tag.getInteger("inside"));
-        this.isMaster = tag.getBoolean("master");
-        this.valveHeightPosition = Math.max(0, tag.getInteger("valveHeightPosition"));
-        if (this.isMaster()) {
-            this.tankHeight = Math.max(0, tag.getInteger("tankHeight"));
-            this.fluidCapacity = Math.max(0, tag.getInteger("fluidCapacity"));
-
-            FluidStack loaded = NbtHelper.readFluidStack(tag, NbtHelper.FLUID_TAG, this.fluidCapacity);
-            if (loaded == null && (tag.hasKey("fluidName") || tag.hasKey("fluidID"))) {
-                loaded = NbtHelper.readLegacyFluid(tag, "fluidName", "fluidID", "fluidAmount", this.fluidCapacity);
-            }
-            this.fluidStack = loaded;
-            this.updateFluidTemperature();
-        } else {
-            // Always re-read the link. The old code skipped this when a master was
-            // already cached, so client S35 packets could never re-point a valve.
-            this.setMasterPos(NbtHelper.readPosition(tag, "masterValve"));
-        }
-
-        this.autoOutput = tag.getBoolean("autoOutput");
-        if (tag.hasKey("valveName")) {
-            this.setValveName(tag.getString("valveName"));
-        } else {
-            this.setValveName(GenericUtil.getUniqueValveName(this));
-        }
-
-        if (tag.hasKey("bottomDiagF")) {
-            this.bottomDiagFrame = NbtHelper.readPosition(tag, "bottomDiagF");
-            this.topDiagFrame = NbtHelper.readPosition(tag, "topDiagF");
-            if (this.bottomDiagFrame == null || this.topDiagFrame == null) {
-                this.bottomDiagFrame = null;
-                this.topDiagFrame = null;
-            }
-        }
+        ValveNbt.apply(this, tag, GenericUtil.getUniqueValveName(this));
     }
 
     public void writeToNBT(NBTTagCompound tag) {
-        tag.setBoolean("isValid", this.isValid);
-        tag.setInteger("inside", this.inside.ordinal());
-        tag.setBoolean("master", this.isMaster());
-        tag.setInteger("valveHeightPosition", this.valveHeightPosition);
-        if (this.isMaster()) {
-            String fluidName = this.fluidStack == null ? null : FluidRegistry.getFluidName(this.fluidStack);
-            tag.setBoolean("hasFluid", this.fluidStack != null);
-            if (fluidName != null) {
-                tag.setString("fluidName", fluidName);
-                tag.setInteger("fluidAmount", this.fluidStack.amount);
-            }
-            NbtHelper.writeFluidStack(tag, NbtHelper.FLUID_TAG, this.fluidStack);
-
-            tag.setInteger("tankHeight", this.tankHeight);
-            tag.setInteger("fluidCapacity", this.fluidCapacity);
-        } else {
-            // Persist the link even when the master chunk is unloaded; resolving the
-            // TE here can force a chunk load during a save.
-            Position3D master = this.masterValvePos;
-            if (master == null) {
-                TileEntityValve resolved = this.getMaster();
-                if (resolved != null) {
-                    master = new Position3D(resolved.xCoord, resolved.yCoord, resolved.zCoord);
-                }
-            }
-            NbtHelper.writePosition(tag, "masterValve", master);
-        }
-
-        tag.setBoolean("autoOutput", this.autoOutput);
-        if (!this.getValveName()
-            .isEmpty()) {
-            tag.setString("valveName", this.getValveName());
-        }
-
-        NbtHelper.writePosition(tag, "bottomDiagF", this.bottomDiagFrame);
-        NbtHelper.writePosition(tag, "topDiagF", this.topDiagFrame);
-
+        ValveNbt.writeFrom(this, tag);
         super.writeToNBT(tag);
     }
 
     public void onDataPacket(NetworkManager net, S35PacketUpdateTileEntity pkt) {
-        this.readFromNBT(pkt.func_148857_g());
+        ValveNbt.apply(this, pkt.func_148857_g(), GenericUtil.getUniqueValveName(this));
     }
 
     public Packet getDescriptionPacket() {
         NBTTagCompound tag = new NBTTagCompound();
-        this.writeToNBT(tag);
+        ValveNbt.writeFrom(this, tag);
         return new S35PacketUpdateTileEntity(this.xCoord, this.yCoord, this.zCoord, 0, tag);
     }
 
@@ -986,6 +885,14 @@ public class TileEntityValve extends TileEntity
 
     int getFluidCapacityInternal() {
         return this.fluidCapacity;
+    }
+
+    void setFluidCapacityInternal(int fluidCapacity) {
+        this.fluidCapacity = fluidCapacity;
+    }
+
+    Position3D getMasterValvePos() {
+        return this.masterValvePos;
     }
 
     int getFluidTemperature() {
