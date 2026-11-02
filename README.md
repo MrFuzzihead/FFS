@@ -163,7 +163,7 @@ the implementation. Work is organised in review-driven batches (see
 
 - Modernised build system for 2026 (GTNH convention plugin, Gradle wrapper,
   auto-provisioned JDK, GitHub Actions CI)
-- Review document and test harness (JUnit 5 + `headlessTest`, 70 tests)
+- Review document and test harness (JUnit 5 + `headlessTest`, 81 tests)
 - Safety fixes: explosion handling, client-side container guard, NBT robustness,
   removed-mod block handling, leak-hardness crash, capacity overflow, fire config,
   `canFill` units, null-valve GUI guard
@@ -192,10 +192,16 @@ the implementation. Work is organised in review-driven batches (see
   hard runtime deps, namespaced tile-entity IDs with legacy aliases, a named tank
   frame, and a default `MAX_SIZE` of 16 (32 remains opt-in), with a one-time
   `FFS.cfg` → `ffs.cfg` migration
+- Architecture: `TankStructure` performs one direct shell/interior scan;
+  `TankFluidHandler`, `TankHazards` and `ValveCommands` split the fluid rules,
+  environment hazards and shared CC/OC semantics out of the block entity. The old
+  `getBlocksBetweenPoints`/`getTankFrame` cuboid maps are gone.
 
 **Planned**
 
-- Architecture split of the 1,415-line `TileEntityValve` and the transient cuboid scan
+- Remaining polish: license choice, i18n for GUI/WAILA strings, and optionally
+  thinning the remaining NBT/auto-output/peripheral adapter code in
+  `TileEntityValve`.
 
 ## Credits
 

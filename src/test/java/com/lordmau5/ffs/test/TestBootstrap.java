@@ -1,5 +1,6 @@
 package com.lordmau5.ffs.test;
 
+import com.lordmau5.ffs.FancyFluidStorage;
 import com.lordmau5.ffs.tile.TileEntityTankFrame;
 
 import cpw.mods.fml.common.registry.GameRegistry;
@@ -25,6 +26,11 @@ public final class TestBootstrap {
             return;
         }
         initialized = true;
+
+        // TileEntityValve reads its config defaults from the mod instance.
+        if (FancyFluidStorage.instance == null) {
+            FancyFluidStorage.instance = new FancyFluidStorage();
+        }
 
         // TileEntity.writeToNBT refuses to serialise unmapped classes.
         GameRegistry.registerTileEntity(TileEntityTankFrame.class, "ffs_test_tank_frame");

@@ -28,7 +28,17 @@ The harness is:
 | 3 | P2 performance: frame ticking, packet storm, master/fluid caches, retained-map removal (LongSet), renderer bottom-face fix + wrapper reuse, precipitation cache, RNG reuse, server-thread packet queue/validation | done |
 | 4 | Renderer/GUI: face/normal fixes, render-pass global hack, scissor math, GL state restore, bounding boxes, lighting | done |
 | 5 | Build/packaging: `ffs` casing, resource domain, `mcmod.info`, optional dependency scopes, TE registry names, tests in CI | done |
-| 6 | Architecture: split `TileEntityValve` into structure/fluid/hazards/peripheral classes; shared CC/OC command layer | planned |
+| 6 | Architecture: split `TileEntityValve` into structure/fluid/hazards/peripheral classes; shared CC/OC command layer | done |
+
+### Test coverage shipped with batch 6
+
+`./gradlew headlessTest` now runs 81 JUnit 5 tests. Batch 6 added:
+
+- `TankStructureTest` (6) — cell classification, 5×5×5/3×3×3 shell counts, non-air
+  and Railcraft residual-heat interiors, inverted/null bounds.
+- `ValveCommandsTest` (4) — empty fluid reports, output maps, unknown names, detached
+  valve safety.
+- `TankFluidHandlerTest` (1) — detached valves reject fill/drain queries.
 
 ### Test coverage shipped with batch 5
 
@@ -315,12 +325,12 @@ and the GUI.
    `getCapacity` perform one lookup.
 4. **`getPrecipitationHeight` per tick per water valve** — **fixed:** cached per valve
    for 20 ticks.
-5. **Full-cuboid maps.** `getBlocksBetweenPoints` allocates a `Position3D` +
+5. **Full-cuboid maps.** `getBlocksBetweenPoints` allocated a `Position3D` +
    `ExtendedBlock` for every block in the cuboid, and `TileEntityValve.maps` retained
    all three maps for the tank's lifetime although only `maps[2]` is read later.
-   **Mostly fixed:** the maps are now local to `setupTank`; only the interior survives
-   as a packed `LongSet` (relative coordinates, no retained objects). The transient
-   cuboid scan itself remains for batch 6's `TankStructure` refactor.
+   **Fixed:** `TankStructure` performs one direct scan; shell cells go into two lists
+   and the interior is a packed `LongSet` (relative coordinates). `getBlocksBetweenPoints`
+   and `getTankFrame` were removed.
 6. **Fluid renderer overdraw.** The bottom face was emitted for **every** height layer
    (`xSize × zSize × height` quads). **Fixed:** it is emitted only for `rY == 0`; the
    side faces were already boundary-only.
@@ -336,8 +346,8 @@ After batch 3 the per-tank costs are:
 
 - **Tick:** frame TEs do not tick; only valves tick (auto-output/rain/hazards).
 - **Memory:** ~8 bytes per interior position (`LongSet`), plus one TE per shell block.
-- **Build/load:** one O(volume) scan, and one packet per newly formed frame (no repeat
-  storm on reload).
+- **Build/load:** one O(volume) direct scan (`TankStructure`), and one packet per
+  newly formed frame (no repeat storm on reload).
 - **Render:** O(surface area) quads (top + four walls), not O(volume).
 
 Going from a 13-wide axis to 16 raises volume by ~1.9× and shell area by ~1.5×;
@@ -348,25 +358,32 @@ the default 13) while keeping the documented semantics. Larger defaults (21/32)
 should stay opt-in because memory, build time and formation packets grow with volume.
 Recommendation: ship the performance work first, profile a 16-wide tank, then raise
 the default in a separate change (and keep 32 as the opt-in maximum). **Shipped in
-batch 5:** the default is now 16; 32 remains the opt-in maximum.
+batch 5:** the default is now 16; 32 remains the opt-in maximum. Batch 6 removed the
+transient cuboid scan, so a future 21 default is easier to justify, but it should
+still be a deliberate server-owner choice because frame count/memory grow with volume.
 
 
 ---
 
 ## 4. P3 — refactors / maintainability
 
-- Split `TileEntityValve` (1,415 lines) into `TankStructure`, `TankFluidHandler`,
-  `TankEnvironmentHandler`, `ValvePeripheral` and a thin block entity.
-- Replace `Map<Position3D, ExtendedBlock>[]` with a typed structure.
-- Config: `long` capacity, one validation path, MAX_SIZE includes the shell, remove
-  dead options.
-- NBT helpers; persist authoritative positions rather than resolving TEs.
-- `ExtendedBlock` should use `Block` identity + `hashCode` and tolerate null.
+- **Fixed (batch 6):** `TankStructure` (direct scan), `TankFluidHandler` (fill/drain
+  rules), `TankHazards` (rain/burn/leak) and `ValveCommands` (shared CC/OC semantics)
+  were extracted from `TileEntityValve`. The block entity is still ~1,300 lines because
+  it owns NBT, auto-output and the two peripheral adapters; further thinning is
+  optional.
+- **Fixed (batch 6):** `Map<Position3D, ExtendedBlock>[]` was replaced by typed shell
+  lists plus a packed `LongSet` interior.
+- Config: capacity is still saturated `int` (the 1.7.10 `IFluidTank` API is `int`);
+  `MAX_SIZE` includes the shell and the default is 16; dead options (`ANONYMOUS_STATISTICS`)
+  remain.
+- NBT helpers; persist authoritative positions rather than resolving TEs. **Done.**
+- `ExtendedBlock` uses `Block` identity + `hashCode` and tolerates null. **Done.**
 - `Position3D` fields `final`; rename `getDistance` to `delta`.
 - Use `@Override` consistently, `final` where possible.
-- Optional mod references: `@Optional.Method` + separate compat classes;
-  move client-only `IIcon`/renderer references out of `CommonProxy`.
-- Log build failures and renderer exceptions instead of silently rendering stone.
+- Optional mod references: `@Optional.Method` + separate compat classes; move
+  client-only `IIcon`/renderer references out of `CommonProxy`.
+- Log build failures as well as renderer exceptions.
 
 ---
 
