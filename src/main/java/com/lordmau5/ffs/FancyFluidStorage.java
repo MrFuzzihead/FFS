@@ -18,6 +18,7 @@ import com.lordmau5.ffs.tile.TileEntityTankFrame;
 import com.lordmau5.ffs.tile.TileEntityValve;
 import com.lordmau5.ffs.util.ConfigMigration;
 import com.lordmau5.ffs.util.GenericUtil;
+import com.lordmau5.ffs.util.LegacyMappings;
 import com.lordmau5.ffs.util.ModNames;
 
 import cpw.mods.fml.common.FMLLog;
@@ -26,6 +27,7 @@ import cpw.mods.fml.common.Mod.EventHandler;
 import cpw.mods.fml.common.Mod.Instance;
 import cpw.mods.fml.common.SidedProxy;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
+import cpw.mods.fml.common.event.FMLMissingMappingsEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.network.NetworkRegistry;
@@ -126,14 +128,24 @@ public class FancyFluidStorage {
 
         config = new Configuration(configFile);
         this.loadConfig();
-        GameRegistry.registerBlock(blockValve = new BlockValve(), "blockValve");
-        GameRegistry.registerBlock(blockTankFrame = new BlockTankFrame(), "blockTankFrame");
+        GameRegistry.registerBlock(blockValve = new BlockValve(), ModNames.BLOCK_VALVE);
+        GameRegistry.registerBlock(blockTankFrame = new BlockTankFrame(), ModNames.BLOCK_FRAME);
         GameRegistry
             .registerTileEntityWithAlternatives(TileEntityValve.class, ModNames.TE_VALVE, ModNames.TE_VALVE_LEGACY);
         GameRegistry
             .registerTileEntityWithAlternatives(TileEntityTankFrame.class, ModNames.TE_FRAME, ModNames.TE_FRAME_LEGACY);
         NetworkRegistry.INSTANCE.registerGuiHandler(this, new GuiHandler());
         NetworkHandler.registerChannels(event.getSide());
+    }
+
+    /**
+     * Migrates worlds written by the old uppercase {@code FFS} mod id. Forge
+     * fires this while loading a world or connecting to a server; without it
+     * the old block and ItemBlock names are treated as missing and removed.
+     */
+    @EventHandler
+    public void missingMappings(FMLMissingMappingsEvent event) {
+        LegacyMappings.remap(event, blockValve, blockTankFrame);
     }
 
     @EventHandler

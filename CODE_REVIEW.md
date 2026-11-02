@@ -32,10 +32,11 @@ The harness is:
 | 7 | License attribution/packaging, WAILA 1.19.34 data/config/advanced tooltip, GUI localization and name sync | done |
 | 8 | NBT/auto-output thinning: `ValveState`/`ValveNbt`, `AutoOutputState`/`TankAutoOutput` | done |
 | 9 | Ownership/setup/break and peripheral-argument extraction: `TankOwnership`, `TankBuilder`, `ValveCommandAdapter` | done |
+| 10 | Legacy world migration: map old `FFS:blockValve`/`FFS:blockTankFrame` block and ItemBlock names to `ffs:*` | done |
 
-### Test coverage shipped with batch 9
+### Test coverage shipped with batches 9-10
 
-`./gradlew headlessTest` now runs 101 JUnit 5 tests. Batch 9 added:
+`./gradlew headlessTest` now runs 106 JUnit 5 tests. Batch 10 added `LegacyMappingsTest` (5) for the old-uppercase block/item name migration. Batch 9 added:
 
 - `TankOwnershipTest` (3) - master flag/link lifecycle, valve lists, name filtering.
 - `ValveCommandAdapterTest` (4) - read-only commands, auto-output by name, invalid
@@ -401,6 +402,11 @@ still be a deliberate server-owner choice because frame count/memory grow with v
 - **Fixed (batch 8):** `ValveState`/`ValveNbt` own the save/load and compact client
   sync, and `AutoOutputState`/`TankAutoOutput` own the flag, sync throttle and
   neighbour push.
+- **Fixed (batch 10):** `LegacyMappings` handles Forge's `FMLMissingMappingsEvent` for
+  worlds saved with the old uppercase `FFS` mod id. Old block and ItemBlock names are
+  remapped to the current blocks at their old numeric ids, so existing tanks survive
+  the `FFS` -> `ffs` rename; the old `tileEntityValve`/`tileEntityTankFrame` ids were
+  already load aliases.
 - **Fixed (batch 9):** `TankOwnership` owns master/slave links and valve lists,
   `TankBuilder` owns formation/teardown (`TankStructure`-based), and
   `ValveCommandAdapter` owns the shared CC/OC argument handling. `TileEntityValve`

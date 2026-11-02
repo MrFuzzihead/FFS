@@ -163,7 +163,7 @@ the implementation. Work is organised in review-driven batches (see
 
 - Modernised build system for 2026 (GTNH convention plugin, Gradle wrapper,
   auto-provisioned JDK, GitHub Actions CI)
-- Review document and test harness (JUnit 5 + `headlessTest`, 101 tests)
+- Review document and test harness (JUnit 5 + `headlessTest`, 106 tests)
 - Safety fixes: explosion handling, client-side container guard, NBT robustness,
   removed-mod block handling, leak-hardness crash, capacity overflow, fire config,
   `canFill` units, null-valve GUI guard
@@ -191,7 +191,10 @@ the implementation. Work is organised in review-driven batches (see
   `after:` metadata for optional mods, optional dependencies no longer published as
   hard runtime deps, namespaced tile-entity IDs with legacy aliases, a named tank
   frame, and a default `MAX_SIZE` of 16 (32 remains opt-in), with a one-time
-  `FFS.cfg` → `ffs.cfg` migration
+  `FFS.cfg` → `ffs.cfg` migration. Worlds saved with the old uppercase `FFS` mod id
+  are migrated through Forge's missing-mapping event: old `FFS:blockValve` and
+  `FFS:blockTankFrame` block/ItemBlock names are remapped to the current `ffs:*`
+  blocks at their original numeric ids, so existing tanks are not removed.
 - Architecture: `TankStructure` performs one direct shell/interior scan;
   `TankFluidHandler`, `TankHazards` and `ValveCommands` split the fluid rules,
   environment hazards and shared CC/OC semantics out of the block entity. The old
