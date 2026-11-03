@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import net.minecraft.nbt.NBTTagCompound;
@@ -11,7 +12,9 @@ import net.minecraft.nbt.NBTTagCompound;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import com.lordmau5.ffs.test.TestBlock;
 import com.lordmau5.ffs.test.TestBootstrap;
+import com.lordmau5.ffs.util.ExtendedBlock;
 import com.lordmau5.ffs.util.Position3D;
 
 class TileEntityTankFrameTest {
@@ -84,6 +87,18 @@ class TileEntityTankFrameTest {
         assertFalse(out.hasKey("valveX"));
         assertFalse(out.hasKey("valveY"));
         assertFalse(out.hasKey("valveZ"));
+    }
+
+    @Test
+    void initializeStoresTheBlockAndIsSafeWithoutAWorld() {
+        TileEntityTankFrame frame = new TileEntityTankFrame();
+        TestBlock block = new TestBlock("ffs_test_frame");
+
+        frame.initialize(null, new ExtendedBlock(block, 3));
+
+        assertTrue(frame.hasBlock());
+        assertSame(block, frame.getStoredBlock());
+        assertEquals(3, frame.getStoredMetadata());
     }
 
     @Test

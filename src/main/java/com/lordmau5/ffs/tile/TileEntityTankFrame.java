@@ -34,6 +34,10 @@ public class TileEntityTankFrame extends TileEntity implements IMoveCheck {
         if (masterValve != null) {
             this.valvePos = new Position3D(masterValve.xCoord, masterValve.yCoord, masterValve.zCoord);
         }
+        // Newly created frames were never sent to the client. Without the
+        // description packet the client has no stored block and the frame renders
+        // as nothing while the existing valve remains visible.
+        this.markForUpdate();
     }
 
     /** The stored block, or {@code null} if this frame was saved by a removed mod. */

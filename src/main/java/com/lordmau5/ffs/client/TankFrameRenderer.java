@@ -50,7 +50,10 @@ public class TankFrameRenderer implements ISimpleBlockRenderingHandler {
     public boolean renderWorldBlock(IBlockAccess ba, int x, int y, int z, Block block, RenderBlocks rb, int pass) {
         TileEntity tile = ba.getTileEntity(x, y, z);
         if (!(tile instanceof TileEntityTankFrame)) {
-            return false;
+            // The client may briefly have the frame block before its S35
+            // description packet creates/populates the TE. Draw a solid fallback
+            // in the solid pass rather than making the whole tank shell vanish.
+            return pass == 0 && rb.renderStandardBlock(Blocks.stone, x, y, z);
         } else {
             boolean invalidRender = true;
             Block renderBlock = Blocks.stone;

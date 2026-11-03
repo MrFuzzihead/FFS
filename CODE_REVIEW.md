@@ -34,10 +34,11 @@ The harness is:
 | 9 | Ownership/setup/break and peripheral-argument extraction: `TankOwnership`, `TankBuilder`, `ValveCommandAdapter` | done |
 | 10 | Legacy world migration: map old `FFS:blockValve`/`FFS:blockTankFrame` block and ItemBlock names to `ffs:*` | done |
 | 11 | Renderer crash/invisible valve: frame pass-result tracking and solid unformed-valve body with accent overlay | done |
+| 12 | Sync newly created tank-frame TEs to clients so formed tanks do not lose their shell | done |
 
-### Test coverage shipped with batches 9-11
+### Test coverage shipped with batches 9-12
 
-`./gradlew headlessTest` now runs 108 JUnit 5 tests. Batch 11 added `TankFrameRendererTest` (2) for the solid/transparent render-pass rules. Batch 10 added `LegacyMappingsTest` (5) for the old-uppercase block/item name migration. Batch 9 added:
+`./gradlew headlessTest` now runs 109 JUnit 5 tests. Batch 12 added frame initialization coverage. Batch 11 added `TankFrameRendererTest` (2) for the solid/transparent render-pass rules. Batch 10 added `LegacyMappingsTest` (5) for the old-uppercase block/item name migration. Batch 9 added:
 
 - `TankOwnershipTest` (3) - master flag/link lifecycle, valve lists, name filtering.
 - `ValveCommandAdapterTest` (4) - read-only commands, auto-output by name, invalid
@@ -248,6 +249,11 @@ result and skips passes that cannot draw the stored block.
 overlay for **unformed** valves, so the solid body disappeared. Unformed valves
 now return the solid `blockValve` body, and `ValveRenderer` draws the accent as
 an overlay, matching the old two-pass render.
+
+Fixed in batch 12: newly created `TileEntityTankFrame`s were initialized only on
+the server, so clients had no stored block and the shell rendered as nothing after
+formation. `initialize()` now marks the frame for an S35 description-packet sync;
+the renderer also draws a stone fallback in pass 0 if the TE has not arrived yet.
 
 ---
 
