@@ -8,6 +8,7 @@ import net.minecraft.client.renderer.tileentity.TileEntitySpecialRenderer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.IIcon;
 import net.minecraft.world.IBlockAccess;
+import net.minecraftforge.common.util.ForgeDirection;
 import net.minecraftforge.fluids.FluidStack;
 
 import org.lwjgl.opengl.GL11;
@@ -240,12 +241,30 @@ public class ValveRenderer extends TileEntitySpecialRenderer implements ISimpleB
         // the solid body; otherwise the transparent tankValve/tankMaster texture
         // is all that is drawn and the block looks invisible.
         renderer.renderStandardBlock(block, x, y, z);
+
         if (!valve.isValid()) {
             renderer.setOverrideBlockTexture(
                 valve.isMaster() ? FancyFluidStorage.proxy.tex_MasterValve[0]
                     : FancyFluidStorage.proxy.tex_SlaveValve[0]);
             renderer.renderStandardBlock(block, x, y, z);
             renderer.clearOverrideBlockTexture();
+        } else {
+            IIcon accent = valve.isMaster() ? FancyFluidStorage.proxy.tex_MasterValve[1]
+                : FancyFluidStorage.proxy.tex_SlaveValve[1];
+            ForgeDirection inside = valve.getInside();
+            if (inside == ForgeDirection.DOWN) {
+                renderer.renderFaceYNeg(block, x, y, z, accent);
+            } else if (inside == ForgeDirection.UP) {
+                renderer.renderFaceYPos(block, x, y, z, accent);
+            } else if (inside == ForgeDirection.NORTH) {
+                renderer.renderFaceZNeg(block, x, y, z, accent);
+            } else if (inside == ForgeDirection.SOUTH) {
+                renderer.renderFaceZPos(block, x, y, z, accent);
+            } else if (inside == ForgeDirection.WEST) {
+                renderer.renderFaceXNeg(block, x, y, z, accent);
+            } else if (inside == ForgeDirection.EAST) {
+                renderer.renderFaceXPos(block, x, y, z, accent);
+            }
         }
         return true;
     }

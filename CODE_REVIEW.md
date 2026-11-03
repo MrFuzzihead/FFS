@@ -37,6 +37,7 @@ The harness is:
 | 12 | Sync newly created tank-frame TEs to clients so formed tanks do not lose their shell | done |
 | 13 | Track the chunk render pass for tank frames; pass -1 during chunk rebuilds made every frame return without drawing | done |
 | 14 | Persist valve names through the FML tick bus, add a GUI Save button, and light fluid rendering by the fluid/world lightmap | done |
+| 15 | Keep the solid valve body under the formed-state accent and move the Save button inside the GUI frame | done |
 
 ### Test coverage shipped with batches 9-13
 
@@ -251,6 +252,12 @@ result and skips passes that cannot draw the stored block.
 overlay for **unformed** valves, so the solid body disappeared. Unformed valves
 now return the solid `blockValve` body, and `ValveRenderer` draws the accent as
 an overlay, matching the old two-pass render.
+
+Fixed in batch 15: formed valves had the same problem on the inside face — the
+green master/slave accent replaced the solid body. The body is now always drawn
+first; the green inside-face accent is overlaid. One accent face is intentional
+(it marks the tank interior); the exterior remains the plain gray valve body.
+The GUI Save button was also moved inward so it no longer clips the frame.
 
 Fixed in batch 12: newly created `TileEntityTankFrame`s were initialized only on
 the server, so clients had no stored block and the shell rendered as nothing after

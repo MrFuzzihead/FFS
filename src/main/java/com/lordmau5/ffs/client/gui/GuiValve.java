@@ -64,7 +64,7 @@ public class GuiValve extends GuiScreen {
             this.valveName.setText(this.originalValveName);
             this.valveName.setMaxStringLength(18);
             this.buttonList
-                .add(new GuiButton(SAVE_BTN_ID, this.left + 204, this.top + 97, 44, 16, translate("gui.ffs.save")));
+                .add(new GuiButton(SAVE_BTN_ID, this.left + 198, this.top + 97, 42, 16, translate("gui.ffs.save")));
         }
     }
 

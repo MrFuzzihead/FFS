@@ -17,7 +17,6 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import com.lordmau5.ffs.FancyFluidStorage;
-import com.lordmau5.ffs.client.ValveFace;
 import com.lordmau5.ffs.client.ValveRenderer;
 import com.lordmau5.ffs.tile.TileEntityValve;
 import com.lordmau5.ffs.util.GenericUtil;
@@ -55,18 +54,9 @@ public class BlockValve extends Block {
     public IIcon getIcon(IBlockAccess world, int x, int y, int z, int side) {
         TileEntity tile = world.getTileEntity(x, y, z);
         if (tile instanceof TileEntityValve) {
-            TileEntityValve valve = (TileEntityValve) tile;
-            boolean master = valve.isMaster();
-            if (!valve.isValid()) {
-                // Keep the solid valve body visible while the tank is unformed;
-                // the accent overlay is drawn by ValveRenderer.
-                return FancyFluidStorage.proxy.tex_Valve;
-            }
-
-            if (ValveFace.isActiveFace(valve.getInside(), side)) {
-                return master ? FancyFluidStorage.proxy.tex_MasterValve[1] : FancyFluidStorage.proxy.tex_SlaveValve[1];
-            }
-
+            // Always return the solid body. ValveRenderer overlays the accent on
+            // the inside face (or all faces while unformed); returning the
+            // transparent accent here made the whole face disappear.
             return FancyFluidStorage.proxy.tex_Valve;
         }
 

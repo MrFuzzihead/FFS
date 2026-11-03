@@ -187,9 +187,10 @@ the implementation. Work is organised in review-driven batches (see
   frame renderer reports the actual pass result (fixes the empty-Tessellator crash);
   newly formed frame TEs are synced to clients so tanks do not lose their shell;
   the frame renderer records the chunk pass instead of reading Forge's stale -1;
-  fluid rendering supplies the world/fluid lightmap brightness; the GUI has an
-  explicit valve-name Save button and Enter-to-save; no global render-pass mutation;
-  GL state fully restored;
+  fluid rendering supplies the world/fluid lightmap brightness; formed valves keep
+  their solid body under the single inside-face accent; the GUI has an explicit
+  valve-name Save button and Enter-to-save; no global render-pass mutation; GL state
+  fully restored;
   gas volumes use the same partial-column math as liquids; the GUI scissor is
   Y-flipped and bottom-aligned; the valve no longer leaks light; and slave render
   bounds are small
