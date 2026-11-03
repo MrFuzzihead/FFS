@@ -35,8 +35,8 @@ class TankFrameRendererTest {
     }
 
     @Test
-    void transparentFramesOnlyRenderWhereTheyAreAllowed() {
-        Block transparent = new TestBlock("ffs_test_transparent_frame") {
+    void transparentFramesOnlyRenderInTheirOwnPass() {
+        Block passOne = new TestBlock("ffs_test_transparent_frame") {
 
             @Override
             public boolean isOpaqueCube() {
@@ -48,9 +48,23 @@ class TankFrameRendererTest {
                 return pass == 1;
             }
         };
+        Block passZero = new TestBlock("ffs_test_glass_frame") {
 
-        assertFalse(TankFrameRenderer.shouldRenderInPass(transparent, false, 0));
-        assertTrue(TankFrameRenderer.shouldRenderInPass(transparent, false, 1));
-        assertFalse(TankFrameRenderer.shouldRenderInPass(transparent, false, 2));
+            @Override
+            public boolean isOpaqueCube() {
+                return false;
+            }
+
+            @Override
+            public boolean canRenderInPass(int pass) {
+                return pass == 0;
+            }
+        };
+
+        assertFalse(TankFrameRenderer.shouldRenderInPass(passOne, false, 0));
+        assertTrue(TankFrameRenderer.shouldRenderInPass(passOne, false, 1));
+        assertFalse(TankFrameRenderer.shouldRenderInPass(passOne, false, 2));
+        assertTrue(TankFrameRenderer.shouldRenderInPass(passZero, false, 0));
+        assertFalse(TankFrameRenderer.shouldRenderInPass(passZero, false, 1));
     }
 }

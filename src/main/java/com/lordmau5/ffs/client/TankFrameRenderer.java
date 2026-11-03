@@ -44,13 +44,13 @@ public class TankFrameRenderer implements ISimpleBlockRenderingHandler {
     }
 
     static boolean shouldRenderInPass(Block renderBlock, boolean opaque, int pass) {
-        if (pass == 0) {
-            return opaque || renderBlock.canRenderInPass(0);
+        if (opaque) {
+            return pass == 0;
         }
-        if (pass == 1) {
-            return !opaque || renderBlock.canRenderInPass(1);
-        }
-        return false;
+        // For transparent stored blocks, the stored block's own pass is
+        // authoritative. The old `!opaque` clause also drew glass in pass 1,
+        // causing the same frame to be emitted twice.
+        return renderBlock.canRenderInPass(pass);
     }
 
     public boolean renderWorldBlock(IBlockAccess world, int x, int y, int z, Block block, int modelId,
