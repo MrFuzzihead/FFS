@@ -58,7 +58,9 @@ public class BlockValve extends Block {
             TileEntityValve valve = (TileEntityValve) tile;
             boolean master = valve.isMaster();
             if (!valve.isValid()) {
-                return master ? FancyFluidStorage.proxy.tex_MasterValve[0] : FancyFluidStorage.proxy.tex_SlaveValve[0];
+                // Keep the solid valve body visible while the tank is unformed;
+                // the accent overlay is drawn by ValveRenderer.
+                return FancyFluidStorage.proxy.tex_Valve;
             }
 
             if (ValveFace.isActiveFace(valve.getInside(), side)) {

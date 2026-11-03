@@ -163,7 +163,7 @@ the implementation. Work is organised in review-driven batches (see
 
 - Modernised build system for 2026 (GTNH convention plugin, Gradle wrapper,
   auto-provisioned JDK, GitHub Actions CI)
-- Review document and test harness (JUnit 5 + `headlessTest`, 106 tests)
+- Review document and test harness (JUnit 5 + `headlessTest`, 108 tests)
 - Safety fixes: explosion handling, client-side container guard, NBT robustness,
   removed-mod block handling, leak-hardness crash, capacity overflow, fire config,
   `canFill` units, null-valve GUI guard
@@ -183,7 +183,9 @@ the implementation. Work is organised in review-driven batches (see
 - Networking: packets are marshalled onto the server thread and validate reach and
   valve-name length
 - Renderer/GUI: correct six-face inventory model and single-pass valve rendering with
-  an inside-face accent; no global render-pass mutation; GL state fully restored;
+  an inside-face accent; unformed valves keep a solid body plus accent overlay; the
+  frame renderer reports the actual pass result (fixes the empty-Tessellator crash);
+  no global render-pass mutation; GL state fully restored;
   gas volumes use the same partial-column math as liquids; the GUI scissor is
   Y-flipped and bottom-aligned; the valve no longer leaks light; and slave render
   bounds are small

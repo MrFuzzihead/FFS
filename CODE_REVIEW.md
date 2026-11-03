@@ -33,10 +33,11 @@ The harness is:
 | 8 | NBT/auto-output thinning: `ValveState`/`ValveNbt`, `AutoOutputState`/`TankAutoOutput` | done |
 | 9 | Ownership/setup/break and peripheral-argument extraction: `TankOwnership`, `TankBuilder`, `ValveCommandAdapter` | done |
 | 10 | Legacy world migration: map old `FFS:blockValve`/`FFS:blockTankFrame` block and ItemBlock names to `ffs:*` | done |
+| 11 | Renderer crash/invisible valve: frame pass-result tracking and solid unformed-valve body with accent overlay | done |
 
-### Test coverage shipped with batches 9-10
+### Test coverage shipped with batches 9-11
 
-`./gradlew headlessTest` now runs 106 JUnit 5 tests. Batch 10 added `LegacyMappingsTest` (5) for the old-uppercase block/item name migration. Batch 9 added:
+`./gradlew headlessTest` now runs 108 JUnit 5 tests. Batch 11 added `TankFrameRendererTest` (2) for the solid/transparent render-pass rules. Batch 10 added `LegacyMappingsTest` (5) for the old-uppercase block/item name migration. Batch 9 added:
 
 - `TankOwnershipTest` (3) - master flag/link lifecycle, valve lists, name filtering.
 - `ValveCommandAdapterTest` (4) - read-only commands, auto-output by name, invalid
@@ -234,6 +235,19 @@ and `canAutoOutput`'s unused `tankHeight` parameter are also wrong/dead.
 A frame whose master valve is not loaded yields `new GuiValve(null, true)`;
 `drawScreen` dereferences `this.valve.getFluid()` → client crash. Guard the handler
 and the GUI.
+
+### 1.11 Renderer crash / invisible unformed valve — fixed in batch 11
+
+`TankFrameRenderer` returned `true` from a render pass even when it emitted no
+vertices (for example an opaque frame checked during pass 1). `WorldRenderer`
+then marked the pass as visible and called `Tessellator.getVertexState` with an
+empty buffer, which crashes in `PriorityQueue`. It now returns the actual render
+result and skips passes that cannot draw the stored block.
+
+`BlockValve.getIcon` also returned the transparent `tankValve`/`tankMaster`
+overlay for **unformed** valves, so the solid body disappeared. Unformed valves
+now return the solid `blockValve` body, and `ValveRenderer` draws the accent as
+an overlay, matching the old two-pass render.
 
 ---
 

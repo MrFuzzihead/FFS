@@ -32,6 +32,16 @@ public class TankFrameRenderer implements ISimpleBlockRenderingHandler {
         return MinecraftForgeClient.getRenderPass();
     }
 
+    static boolean shouldRenderInPass(Block renderBlock, boolean opaque, int pass) {
+        if (pass == 0) {
+            return opaque || renderBlock.canRenderInPass(0);
+        }
+        if (pass == 1) {
+            return !opaque || renderBlock.canRenderInPass(1);
+        }
+        return false;
+    }
+
     public boolean renderWorldBlock(IBlockAccess world, int x, int y, int z, Block block, int modelId,
         RenderBlocks renderer) {
         return this.renderWorldBlock(world, x, y, z, block, renderer, getPassForFrameRender());
@@ -53,10 +63,10 @@ public class TankFrameRenderer implements ISimpleBlockRenderingHandler {
 
             IBlockAccess origBa = rb.blockAccess;
             boolean isFrameBlockOpaque = renderBlock.isOpaqueCube();
-            if ((isFrameBlockOpaque || renderBlock.canRenderInPass(0)) && pass == 0
-                || (!isFrameBlockOpaque || renderBlock.canRenderInPass(1)) && pass == 1) {
+            boolean rendered = false;
+            if (shouldRenderInPass(renderBlock, isFrameBlockOpaque, pass)) {
                 if (invalidRender) {
-                    rb.renderStandardBlock(renderBlock, x, y, z);
+                    rendered = rb.renderStandardBlock(renderBlock, x, y, z);
                 } else {
                     // Reuse the stateless wrapper: allocating one per frame block per
                     // render pass causes tens of thousands of short-lived objects.
@@ -67,20 +77,23 @@ public class TankFrameRenderer implements ISimpleBlockRenderingHandler {
                     rb.blockAccess = this.wrapper;
 
                     try {
-                        rb.renderBlockByRenderType(renderBlock, x, y, z);
+                        rendered = rb.renderBlockByRenderType(renderBlock, x, y, z);
                     } catch (Exception e) {
                         rb.blockAccess = origBa;
                         if (this.failedBlocks.add(renderBlock)) {
                             FMLLog.log(Level.WARN, e, "FFS: failed to render tank frame block %s", renderBlock);
                         }
-                        rb.renderStandardBlock(Blocks.stone, x, y, z);
+                        rendered = rb.renderStandardBlock(Blocks.stone, x, y, z);
                     }
                 }
 
                 rb.blockAccess = origBa;
             }
 
-            return true;
+            // Returning true without emitting vertices makes WorldRenderer try to
+            // sort an empty buffer on pass 1 (IllegalArgumentException from
+            // PriorityQueue). Report exactly what was drawn.
+            return rendered;
         }
     }
 

@@ -226,10 +226,19 @@ public class ValveRenderer extends TileEntitySpecialRenderer implements ISimpleB
             return false;
         }
 
-        // BlockValve.getIcon supplies the master/slave base texture and the accent
-        // texture for the inside face. Rendering the block once avoids the old
-        // duplicate-face z-fighting and the mismatched renderFace* calls.
+        TileEntityValve valve = (TileEntityValve) tile;
+        // BlockValve.getIcon supplies the valve body (and the accent for the
+        // inside face once formed). Unformed valves need the accent overlaid on
+        // the solid body; otherwise the transparent tankValve/tankMaster texture
+        // is all that is drawn and the block looks invisible.
         renderer.renderStandardBlock(block, x, y, z);
+        if (!valve.isValid()) {
+            renderer.setOverrideBlockTexture(
+                valve.isMaster() ? FancyFluidStorage.proxy.tex_MasterValve[0]
+                    : FancyFluidStorage.proxy.tex_SlaveValve[0]);
+            renderer.renderStandardBlock(block, x, y, z);
+            renderer.clearOverrideBlockTexture();
+        }
         return true;
     }
 
