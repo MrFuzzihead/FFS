@@ -27,20 +27,46 @@ public class TileEntityTankFrame extends TileEntity implements IMoveCheck {
     private ExtendedBlock block;
     private Position3D valvePos;
     private TileEntityValve masterValve;
-    private boolean wantsUpdate = false;
 
     public void initialize(TileEntityValve masterValve, ExtendedBlock block) {
         this.masterValve = masterValve;
         this.block = block;
+        if (masterValve != null) {
+            this.valvePos = new Position3D(masterValve.xCoord, masterValve.yCoord, masterValve.zCoord);
+        }
+        // Newly created frames were never sent to the client. Without the
+        // description packet the client has no stored block and the frame renders
+        // as nothing while the existing valve remains visible.
+        this.markForUpdate();
+    }
+
+    /** The stored block, or {@code null} if this frame was saved by a removed mod. */
+    public Block getStoredBlock() {
+        return this.block == null ? null : this.block.getBlock();
+    }
+
+    public int getStoredMetadata() {
+        return this.block == null ? 0 : this.block.getMetadata();
+    }
+
+    public boolean hasBlock() {
+        return this.block != null && this.block.getBlock() != null;
     }
 
     public boolean isFrameInvalid() {
+        if (this.worldObj == null) {
+            return true;
+        }
+
         TileEntity tile = this.worldObj.getTileEntity(this.xCoord, this.yCoord, this.zCoord);
         return tile == null || !(tile instanceof TileEntityTankFrame) || tile != this;
     }
 
     public List<ForgeDirection> getNeighborBlockOrAir(Block block) {
         List<ForgeDirection> dirs = new ArrayList<>();
+        if (this.worldObj == null || block == null) {
+            return dirs;
+        }
 
         for (ForgeDirection dr : ForgeDirection.VALID_DIRECTIONS) {
             if (block == Blocks.air) {
@@ -62,9 +88,8 @@ public class TileEntityTankFrame extends TileEntity implements IMoveCheck {
     }
 
     public boolean tryBurning() {
-        Block block = this.getBlock()
-            .getBlock();
-        if (block == null) {
+        Block block = this.getStoredBlock();
+        if (block == null || this.worldObj == null) {
             return false;
         } else {
             for (ForgeDirection dr : this.getNeighborBlockOrAir(Blocks.air)) {
@@ -85,7 +110,7 @@ public class TileEntityTankFrame extends TileEntity implements IMoveCheck {
     }
 
     public void breakFrame() {
-        if (!this.isFrameInvalid()) {
+        if (this.worldObj != null && !this.isFrameInvalid()) {
             this.worldObj.removeTileEntity(this.xCoord, this.yCoord, this.zCoord);
             if (this.block != null && this.block.getBlock() != null) {
                 this.worldObj.setBlock(
@@ -107,13 +132,41 @@ public class TileEntityTankFrame extends TileEntity implements IMoveCheck {
         }
     }
 
-    public void setValvePos(Position3D valvePos) {
+    /** @return true when the valve link actually changed */
+    public boolean setValvePos(Position3D valvePos) {
+        boolean changed = this.valvePos == null ? valvePos != null : !this.valvePos.equals(valvePos);
         this.valvePos = valvePos;
         this.masterValve = null;
+        return changed;
+    }
+
+    public Position3D getValvePos() {
+        return this.valvePos;
+    }
+
+    /**
+     * {@code true} when this frame already belongs to a different, still-valid
+     * tank. Shared walls must not be silently stolen by the next tank that forms.
+     */
+    public boolean isOwnedByOther(TileEntityValve master) {
+        if (this.valvePos == null) {
+            return false;
+        }
+
+        if (master != null && this.valvePos.equals(new Position3D(master.xCoord, master.yCoord, master.zCoord))) {
+            return false;
+        }
+
+        TileEntityValve other = this.getValve();
+        return other != null && other.isValid();
     }
 
     public TileEntityValve getValve() {
-        if (this.masterValve == null && this.valvePos != null) {
+        if (this.masterValve != null && this.masterValve.isInvalid()) {
+            this.masterValve = null;
+        }
+
+        if (this.masterValve == null && this.valvePos != null && this.worldObj != null) {
             TileEntity tile = this.worldObj
                 .getTileEntity(this.valvePos.getX(), this.valvePos.getY(), this.valvePos.getZ());
             this.masterValve = tile instanceof TileEntityValve ? (TileEntityValve) tile : null;
@@ -132,34 +185,43 @@ public class TileEntityTankFrame extends TileEntity implements IMoveCheck {
 
     public void readFromNBT(NBTTagCompound tag) {
         super.readFromNBT(tag);
-        if (tag.hasKey("valveX")) {
+        if (tag.hasKey("valveX") && tag.hasKey("valveY") && tag.hasKey("valveZ")) {
             this.setValvePos(
                 new Position3D(tag.getInteger("valveX"), tag.getInteger("valveY"), tag.getInteger("valveZ")));
+        } else {
+            this.valvePos = null;
         }
 
         if (tag.hasKey("blockId")) {
-            this.block = new ExtendedBlock(Block.getBlockById(tag.getInteger("blockId")), tag.getInteger("metadata"));
+            Block stored = Block.getBlockById(tag.getInteger("blockId"));
+            // A removed mod leaves an unknown id behind. Treat it as "no block" so
+            // the renderer/drops/pick-block paths can fall back safely.
+            this.block = stored == null || stored == Blocks.air ? null
+                : new ExtendedBlock(stored, tag.getInteger("metadata"));
+        } else {
+            this.block = null;
         }
     }
 
     public void writeToNBT(NBTTagCompound tag) {
         super.writeToNBT(tag);
-        if (this.getValve() != null) {
-            tag.setInteger("valveX", this.getValve().xCoord);
-            tag.setInteger("valveY", this.getValve().yCoord);
-            tag.setInteger("valveZ", this.getValve().zCoord);
+        Position3D valve = this.valvePos;
+        if (valve == null) {
+            TileEntityValve resolved = this.getValve();
+            if (resolved != null) {
+                valve = new Position3D(resolved.xCoord, resolved.yCoord, resolved.zCoord);
+            }
         }
 
-        if (this.getBlock() != null) {
-            tag.setInteger(
-                "blockId",
-                Block.getIdFromBlock(
-                    this.getBlock()
-                        .getBlock()));
-            tag.setInteger(
-                "metadata",
-                this.getBlock()
-                    .getMetadata());
+        if (valve != null) {
+            tag.setInteger("valveX", valve.getX());
+            tag.setInteger("valveY", valve.getY());
+            tag.setInteger("valveZ", valve.getZ());
+        }
+
+        if (this.hasBlock()) {
+            tag.setInteger("blockId", Block.getIdFromBlock(this.getStoredBlock()));
+            tag.setInteger("metadata", this.getStoredMetadata());
         }
     }
 
@@ -174,18 +236,18 @@ public class TileEntityTankFrame extends TileEntity implements IMoveCheck {
     }
 
     public void markForUpdate() {
-        if (this.worldObj == null) {
-            this.wantsUpdate = true;
-        } else {
+        if (this.worldObj != null) {
             this.worldObj.markBlockForUpdate(this.xCoord, this.yCoord, this.zCoord);
         }
     }
 
-    public void updateEntity() {
-        if (this.wantsUpdate) {
-            this.markForUpdate();
-            this.wantsUpdate = false;
-        }
+    /**
+     * Frames only serve rendering and NBT data; they have no per-tick work. Avoiding
+     * the tick list removes thousands of idle updateEntity calls per large tank.
+     */
+    @Override
+    public boolean canUpdate() {
+        return false;
     }
 
     @Method(modid = "funkylocomotion")

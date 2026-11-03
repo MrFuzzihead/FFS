@@ -22,9 +22,11 @@ public class GuiHandler implements IGuiHandler {
             return null;
         } else if (tile instanceof TileEntityValve) {
             return new GuiValve((TileEntityValve) tile, false);
-        } else {
-            return tile instanceof TileEntityTankFrame ? new GuiValve(((TileEntityTankFrame) tile).getValve(), true)
-                : null;
+        } else if (tile instanceof TileEntityTankFrame) {
+            TileEntityValve valve = ((TileEntityTankFrame) tile).getValve();
+            return valve == null ? null : new GuiValve(valve, true);
         }
+
+        return null;
     }
 }

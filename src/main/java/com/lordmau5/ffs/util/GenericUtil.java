@@ -2,10 +2,7 @@ package com.lordmau5.ffs.util;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockGlass;
@@ -48,8 +45,7 @@ public class GenericUtil {
     }
 
     public static boolean canAutoOutput(float height, int tankHeight, int valvePosition, boolean negativeDensity) {
-        height *= tankHeight;
-        return negativeDensity ? false : height > valvePosition - 0.5F;
+        return TankMath.canAutoOutput(height, tankHeight, valvePosition, negativeDensity);
     }
 
     public static boolean isBlockGlass(Block block, int metadata) {
@@ -79,6 +75,9 @@ public class GenericUtil {
 
     public static boolean areTankBlocksValid(ExtendedBlock bottomBlock, ExtendedBlock topBlock, World world,
         Position3D bottomPos) {
+        if (bottomBlock == null || topBlock == null) {
+            return false;
+        }
         if (!isValidTankBlock(world, bottomPos, bottomBlock)) {
             return false;
         } else {
@@ -96,6 +95,10 @@ public class GenericUtil {
     }
 
     public static boolean isTileEntityAcceptable(Block block, TileEntity tile) {
+        if (block == null || validTiles == null) {
+            return false;
+        }
+
         for (String name : validTiles) {
             if (block.getUnlocalizedName()
                 .toLowerCase()
@@ -108,6 +111,10 @@ public class GenericUtil {
     }
 
     public static boolean isValidTankBlock(World world, Position3D pos, ExtendedBlock extendedBlock) {
+        if (extendedBlock == null || extendedBlock.getBlock() == null) {
+            return false;
+        }
+
         Block block = extendedBlock.getBlock();
         if (block.hasTileEntity(extendedBlock.getMetadata())) {
             TileEntity tile = world.getTileEntity(pos.getX(), pos.getY(), pos.getZ());
@@ -131,6 +138,10 @@ public class GenericUtil {
     }
 
     public static boolean canBlockLeak(Block block) {
+        if (block == null) {
+            return false;
+        }
+
         Material mat = block.getMaterial();
         return mat.equals(Material.grass) || mat.equals(Material.sponge)
             || mat.equals(Material.cloth)
@@ -146,6 +157,12 @@ public class GenericUtil {
 
     public static boolean fluidContainerHandler(World world, int x, int y, int z, TileEntityValve valve,
         EntityPlayer player) {
+        // onBlockActivated is invoked on the client as well; all inventory and tank
+        // mutations must happen on the server only (the server syncs the result).
+        if (world.isRemote) {
+            return true;
+        }
+
         ItemStack current = player.inventory.getCurrentItem();
         if (current == null) {
             return false;
@@ -240,68 +257,6 @@ public class GenericUtil {
             stack.splitStack(1);
             return stack;
         }
-    }
-
-    private static Map<Position3D, ExtendedBlock> getBlocksBetweenPoints(World world, Position3D pos1,
-        Position3D pos2) {
-        Map<Position3D, ExtendedBlock> blocks = new HashMap<>();
-        Position3D distance = pos2.getDistance(pos1);
-        int dX = distance.getX();
-        int dY = distance.getY();
-        int dZ = distance.getZ();
-
-        for (int x = 0; x <= dX; x++) {
-            for (int y = 0; y <= dY; y++) {
-                for (int z = 0; z <= dZ; z++) {
-                    Position3D pos = new Position3D(pos1.getX() + x, pos1.getY() + y, pos1.getZ() + z);
-                    blocks.put(
-                        pos,
-                        new ExtendedBlock(
-                            world.getBlock(pos.getX(), pos.getY(), pos.getZ()),
-                            world.getBlockMetadata(pos.getX(), pos.getY(), pos.getZ())));
-                }
-            }
-        }
-
-        return blocks;
-    }
-
-    public static Map<Position3D, ExtendedBlock>[] getTankFrame(World world, Position3D bottomDiag,
-        Position3D topDiag) {
-        Map<Position3D, ExtendedBlock>[] maps = new HashMap[3];
-        maps[0] = new HashMap<>();
-        maps[1] = new HashMap<>();
-        maps[2] = new HashMap<>();
-        int x1 = bottomDiag.getX();
-        int y1 = bottomDiag.getY();
-        int z1 = bottomDiag.getZ();
-        int x2 = topDiag.getX();
-        int y2 = topDiag.getY();
-        int z2 = topDiag.getZ();
-
-        for (Entry<Position3D, ExtendedBlock> e : getBlocksBetweenPoints(
-            world,
-            new Position3D(x1, y1, z1),
-            new Position3D(x2, y2, z2)).entrySet()) {
-            Position3D p = e.getKey();
-            if ((p.getX() != x1 && p.getX() != x2 || p.getY() != y1 && p.getY() != y2)
-                && (p.getX() != x1 && p.getX() != x2 || p.getZ() != z1 && p.getZ() != z2)
-                && (p.getY() != y1 && p.getY() != y2 || p.getZ() != z1 && p.getZ() != z2)) {
-                if (p.getX() != x1 && p.getX() != x2
-                    && p.getY() != y1
-                    && p.getY() != y2
-                    && p.getZ() != z1
-                    && p.getZ() != z2) {
-                    maps[2].put(p, e.getValue());
-                } else {
-                    maps[1].put(p, e.getValue());
-                }
-            } else {
-                maps[0].put(p, e.getValue());
-            }
-        }
-
-        return maps;
     }
 
     public static String intToFancyNumber(int number) {

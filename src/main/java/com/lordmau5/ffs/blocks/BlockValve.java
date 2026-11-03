@@ -10,16 +10,17 @@ import net.minecraft.entity.EnumCreatureType;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.IIcon;
 import net.minecraft.world.Explosion;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
-import net.minecraftforge.client.ForgeHooksClient;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import com.lordmau5.ffs.FancyFluidStorage;
 import com.lordmau5.ffs.client.ValveRenderer;
 import com.lordmau5.ffs.tile.TileEntityValve;
 import com.lordmau5.ffs.util.GenericUtil;
+import com.lordmau5.ffs.util.ModNames;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -29,7 +30,7 @@ public class BlockValve extends Block {
     public BlockValve() {
         super(Material.iron);
         this.setBlockName("blockValve");
-        this.setBlockTextureName("FFS:blockValve");
+        this.setBlockTextureName(ModNames.resource("blockValve"));
         this.setCreativeTab(CreativeTabs.tabRedstone);
         this.setHardness(5.0F);
         this.setResistance(10.0F);
@@ -48,6 +49,20 @@ public class BlockValve extends Block {
         FancyFluidStorage.proxy.registerIcons(iR);
     }
 
+    @SideOnly(Side.CLIENT)
+    @Override
+    public IIcon getIcon(IBlockAccess world, int x, int y, int z, int side) {
+        TileEntity tile = world.getTileEntity(x, y, z);
+        if (tile instanceof TileEntityValve) {
+            // Always return the solid body. ValveRenderer overlays the accent on
+            // the inside face (or all faces while unformed); returning the
+            // transparent accent here made the whole face disappear.
+            return FancyFluidStorage.proxy.tex_Valve;
+        }
+
+        return super.getIcon(world, x, y, z, side);
+    }
+
     public void onBlockExploded(World world, int x, int y, int z, Explosion explosion) {
         TileEntity tile = world.getTileEntity(x, y, z);
         if (tile != null && tile instanceof TileEntityValve) {
@@ -55,16 +70,37 @@ public class BlockValve extends Block {
             valve.breakTank(null);
         }
 
-        super.onBlockDestroyedByExplosion(world, x, y, z, explosion);
+        super.onBlockExploded(world, x, y, z, explosion);
     }
 
     public void breakBlock(World world, int x, int y, int z, Block block, int metadata) {
         if (!world.isRemote) {
-            TileEntityValve valve = (TileEntityValve) world.getTileEntity(x, y, z);
-            valve.breakTank(null);
+            TileEntity tile = world.getTileEntity(x, y, z);
+            if (tile instanceof TileEntityValve) {
+                ((TileEntityValve) tile).breakTank(null);
+            }
         }
 
         super.breakBlock(world, x, y, z, block, metadata);
+    }
+
+    @Override
+    public void onNeighborChange(IBlockAccess world, int x, int y, int z, int tileX, int tileY, int tileZ) {
+        TileEntity tile = world.getTileEntity(x, y, z);
+        if (tile instanceof TileEntityValve) {
+            ((TileEntityValve) tile).onNeighborChangedAt(tileX, tileY, tileZ);
+        }
+    }
+
+    @Override
+    public void onNeighborBlockChange(World world, int x, int y, int z, Block neighbor) {
+        TileEntity tile = world.getTileEntity(x, y, z);
+        if (tile instanceof TileEntityValve) {
+            TileEntityValve valve = (TileEntityValve) tile;
+            for (ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
+                valve.onNeighborChangedAt(x + dir.offsetX, y + dir.offsetY, z + dir.offsetZ);
+            }
+        }
     }
 
     public boolean onBlockActivated(World world, int x, int y, int z, EntityPlayer player, int side, float hitX,
@@ -75,6 +111,10 @@ public class BlockValve extends Block {
             return false;
         } else {
             TileEntityValve valve = (TileEntityValve) world.getTileEntity(x, y, z);
+            if (valve == null) {
+                return false;
+            }
+
             if (valve.isValid()) {
                 if (GenericUtil.isFluidContainer(player.getHeldItem())) {
                     return GenericUtil.fluidContainerHandler(world, x, y, z, valve, player);
@@ -101,13 +141,15 @@ public class BlockValve extends Block {
         return ValveRenderer.id;
     }
 
-    public boolean canRenderInPass(int pass) {
-        ForgeHooksClient.setRenderPass(pass);
-        return true;
-    }
-
     public int getRenderBlockPass() {
         return 0;
+    }
+
+    @Override
+    public int getLightOpacity() {
+        // The valve is a solid metal cube; without this the constructor's
+        // isOpaqueCube()==false leaves lightOpacity at 0 and light leaks through.
+        return 255;
     }
 
     public boolean renderAsNormalBlock() {

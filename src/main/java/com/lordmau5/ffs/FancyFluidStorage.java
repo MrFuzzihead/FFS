@@ -1,5 +1,8 @@
 package com.lordmau5.ffs;
 
+import java.io.File;
+import java.io.IOException;
+
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
@@ -13,13 +16,18 @@ import com.lordmau5.ffs.proxy.CommonProxy;
 import com.lordmau5.ffs.proxy.GuiHandler;
 import com.lordmau5.ffs.tile.TileEntityTankFrame;
 import com.lordmau5.ffs.tile.TileEntityValve;
+import com.lordmau5.ffs.util.ConfigMigration;
 import com.lordmau5.ffs.util.GenericUtil;
+import com.lordmau5.ffs.util.LegacyMappings;
+import com.lordmau5.ffs.util.ModNames;
 
+import cpw.mods.fml.common.FMLLog;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.Mod.EventHandler;
 import cpw.mods.fml.common.Mod.Instance;
 import cpw.mods.fml.common.SidedProxy;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
+import cpw.mods.fml.common.event.FMLMissingMappingsEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.network.NetworkRegistry;
@@ -32,20 +40,20 @@ import cpw.mods.fml.common.registry.GameRegistry;
     dependencies = FancyFluidStorage.DEPENDENCIES)
 public class FancyFluidStorage {
 
-    public static final String MODID = "FFS";
+    public static final String MODID = ModNames.MODID;
     public static final String MODNAME = "Fancy Fluid Storage";
-    public static final String DEPENDENCIES = "after:waila;after:chisel;after:OpenComputers;after:ComputerCraft;after:BuildCraftAPI|Transport;after:funkylocomotion";
+    public static final String DEPENDENCIES = "after:waila;after:chisel;after:OpenComputers;after:ComputerCraft;after:BuildCraftAPI|Transport;after:funkylocomotion;after:JAKJ_RedstoneInMotion";
     public static BlockValve blockValve;
     public static BlockTankFrame blockTankFrame;
     public static Configuration config;
-    @Instance("FFS")
+    @Instance(ModNames.MODID)
     public static FancyFluidStorage instance;
     @SidedProxy(clientSide = "com.lordmau5.ffs.proxy.ClientProxy", serverSide = "com.lordmau5.ffs.proxy.CommonProxy")
     public static CommonProxy proxy;
     public boolean ANONYMOUS_STATISTICS = true;
     public int MB_PER_TANK_BLOCK = 16000;
     public boolean INSIDE_CAPACITY = false;
-    public int MAX_SIZE = 13;
+    public int MAX_SIZE = 16;
     public int MIN_BURNABLE_TEMPERATURE = 1300;
     public boolean SET_WORLD_ON_FIRE = true;
     public boolean SHOULD_TANKS_LEAK = true;
@@ -67,11 +75,11 @@ public class FancyFluidStorage {
         Property insideCapacityProp = config.get("general", "onlyCountInsideCapacity", true);
         insideCapacityProp.comment = "Should tank capacity only count the interior air blocks, rather than including the frame?\nDefault: true";
         this.INSIDE_CAPACITY = insideCapacityProp.getBoolean(true);
-        Property maxSizeProp = config.get("general", "maxSize", 13);
-        maxSizeProp.comment = "Define the maximum size a tank can have. This includes the whole tank, including the frame!\nMinimum: 3, Maximum: 32\nDefault: 13";
-        this.MAX_SIZE = Math.max(3, Math.min(maxSizeProp.getInt(13), 32));
-        if (maxSizeProp.getInt(13) < 3 || maxSizeProp.getInt(13) > 32) {
-            maxSizeProp.set(13);
+        Property maxSizeProp = config.get("general", "maxSize", 16);
+        maxSizeProp.comment = "Define the maximum size a tank can have. This includes the whole tank, including the frame!\nMinimum: 3, Maximum: 32\nDefault: 16";
+        this.MAX_SIZE = Math.max(3, Math.min(maxSizeProp.getInt(16), 32));
+        if (maxSizeProp.getInt(16) < 3 || maxSizeProp.getInt(16) > 32) {
+            maxSizeProp.set(16);
         }
 
         Property tankFrameModeProp = config.get("general", "tankFrameMode", 1);
@@ -107,14 +115,37 @@ public class FancyFluidStorage {
     @EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         proxy.preInit();
-        config = new Configuration(event.getSuggestedConfigurationFile());
+
+        File configFile = event.getSuggestedConfigurationFile();
+        File parent = configFile.getParentFile();
+        try {
+            if (ConfigMigration.copyLegacyIfNeeded(configFile, parent == null ? null : new File(parent, "FFS.cfg"))) {
+                FMLLog.info("FFS: migrated legacy config to %s", configFile.getName());
+            }
+        } catch (IOException e) {
+            FMLLog.warning("FFS: could not migrate legacy config: %s", e.getMessage());
+        }
+
+        config = new Configuration(configFile);
         this.loadConfig();
-        GameRegistry.registerBlock(blockValve = new BlockValve(), "blockValve");
-        GameRegistry.registerBlock(blockTankFrame = new BlockTankFrame(), "blockTankFrame");
-        GameRegistry.registerTileEntity(TileEntityValve.class, "tileEntityValve");
-        GameRegistry.registerTileEntity(TileEntityTankFrame.class, "tileEntityTankFrame");
+        GameRegistry.registerBlock(blockValve = new BlockValve(), ModNames.BLOCK_VALVE);
+        GameRegistry.registerBlock(blockTankFrame = new BlockTankFrame(), ModNames.BLOCK_FRAME);
+        GameRegistry
+            .registerTileEntityWithAlternatives(TileEntityValve.class, ModNames.TE_VALVE, ModNames.TE_VALVE_LEGACY);
+        GameRegistry
+            .registerTileEntityWithAlternatives(TileEntityTankFrame.class, ModNames.TE_FRAME, ModNames.TE_FRAME_LEGACY);
         NetworkRegistry.INSTANCE.registerGuiHandler(this, new GuiHandler());
         NetworkHandler.registerChannels(event.getSide());
+    }
+
+    /**
+     * Migrates worlds written by the old uppercase {@code FFS} mod id. Forge
+     * fires this while loading a world or connecting to a server; without it
+     * the old block and ItemBlock names are treated as missing and removed.
+     */
+    @EventHandler
+    public void missingMappings(FMLMissingMappingsEvent event) {
+        LegacyMappings.remap(event, blockValve, blockTankFrame);
     }
 
     @EventHandler

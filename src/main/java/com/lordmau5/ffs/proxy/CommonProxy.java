@@ -5,7 +5,9 @@ import net.minecraft.util.IIcon;
 
 import com.lordmau5.ffs.compat.CCPeripheralProvider;
 import com.lordmau5.ffs.compat.RiMEventHandler;
+import com.lordmau5.ffs.network.ServerTaskQueue;
 
+import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Loader;
 import me.planetguy.remaininmotion.api.event.EventManager;
 
@@ -23,6 +25,9 @@ public class CommonProxy {
 
     public void init() {
         this.BUILDCRAFT_LOADED = Loader.isModLoaded("BuildCraftAPI|Transport");
+        FMLCommonHandler.instance()
+            .bus()
+            .register(new ServerTaskQueue());
         if (Loader.isModLoaded("ComputerCraft")) {
             new CCPeripheralProvider().register();
         }

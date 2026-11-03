@@ -10,6 +10,8 @@ import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.IIcon;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.StatCollector;
+import net.minecraftforge.fluids.FluidStack;
 
 import org.lwjgl.opengl.GL11;
 
@@ -18,14 +20,17 @@ import com.lordmau5.ffs.network.FFSPacket;
 import com.lordmau5.ffs.network.NetworkHandler;
 import com.lordmau5.ffs.tile.TileEntityValve;
 import com.lordmau5.ffs.util.GenericUtil;
+import com.lordmau5.ffs.util.ModNames;
 
 public class GuiValve extends GuiScreen {
 
-    protected static final ResourceLocation tex = new ResourceLocation("FFS:textures/gui/gui_tank.png");
+    protected static final ResourceLocation tex = new ResourceLocation(ModNames.resource("textures/gui/gui_tank.png"));
     protected static final int AUTO_FLUID_OUTPUT_BTN_ID = 23442;
+    protected static final int SAVE_BTN_ID = 23443;
     TileEntityValve valve;
     boolean isFrame;
     GuiTextField valveName;
+    String originalValveName = "";
     int xSize = 256;
     int ySize = 121;
     int left = 0;
@@ -40,47 +45,89 @@ public class GuiValve extends GuiScreen {
 
     public void initGui() {
         super.initGui();
+        if (this.valve == null) {
+            return;
+        }
         this.left = (this.width - this.xSize) / 2;
         this.top = (this.height - this.ySize) / 2;
         if (!this.isFrame) {
             this.buttonList.add(
                 new GuiToggle(
-                    23442,
+                    AUTO_FLUID_OUTPUT_BTN_ID,
                     this.left + 80,
                     this.top + 20,
-                    "Auto fluid output",
+                    translate("gui.ffs.auto_output"),
                     this.valve.getAutoOutput(),
                     16777215));
-            this.valveName = new GuiTextField(this.fontRendererObj, this.left + 80, this.top + 100, 120, 10);
-            this.valveName.setText(this.valve.getValveName());
+            this.originalValveName = this.valve.getValveName();
+            this.valveName = new GuiTextField(this.fontRendererObj, this.left + 80, this.top + 100, 112, 10);
+            this.valveName.setText(this.originalValveName);
             this.valveName.setMaxStringLength(18);
+            this.buttonList
+                .add(new GuiButton(SAVE_BTN_ID, this.left + 198, this.top + 96, 44, 20, translate("gui.ffs.save")));
         }
     }
 
     public void onGuiClosed() {
         super.onGuiClosed();
-        if (!this.isFrame && !this.valveName.getText()
-            .isEmpty()) {
-            NetworkHandler
-                .sendPacketToServer(new FFSPacket.Server.UpdateValveName(this.valve, this.valveName.getText()));
+        this.saveValveName();
+    }
+
+    private void saveValveName() {
+        if (this.valve == null || this.isFrame || this.valveName == null) {
+            return;
         }
+
+        String name = this.valveName.getText()
+            .trim();
+        if (name.isEmpty() || name.equals(this.originalValveName)) {
+            return;
+        }
+
+        this.valveName.setText(name);
+        this.valve.setValveName(name);
+        this.originalValveName = name;
+        NetworkHandler.sendPacketToServer(new FFSPacket.Server.UpdateValveName(this.valve, name));
     }
 
     protected void keyTyped(char keyChar, int keyCode) {
-        if (!this.isFrame && this.valveName.isFocused()) {
-            this.valveName.textboxKeyTyped(keyChar, keyCode);
-        } else {
-            if (keyCode == 1 || keyCode == this.mc.gameSettings.keyBindInventory.getKeyCode()) {
-                this.mc.thePlayer.closeScreen();
-                this.mc.setIngameFocus();
-            }
+        if (this.valve == null) {
+            super.keyTyped(keyChar, keyCode);
+            return;
         }
+
+        if (keyCode == 1) {
+            this.mc.thePlayer.closeScreen();
+            this.mc.setIngameFocus();
+            return;
+        }
+
+        if (!this.isFrame && this.valveName.isFocused()) {
+            if (keyCode == 28) {
+                this.saveValveName();
+                return;
+            }
+            this.valveName.textboxKeyTyped(keyChar, keyCode);
+            return;
+        }
+
+        if (keyCode == this.mc.gameSettings.keyBindInventory.getKeyCode()) {
+            this.mc.thePlayer.closeScreen();
+            this.mc.setIngameFocus();
+            return;
+        }
+
+        super.keyTyped(keyChar, keyCode);
     }
 
-    protected void mouseClicked(int p_73864_1_, int p_73864_2_, int p_73864_3_) {
-        super.mouseClicked(p_73864_1_, p_73864_2_, p_73864_3_);
+    protected void mouseClicked(int mouseX, int mouseY, int button) {
+        super.mouseClicked(mouseX, mouseY, button);
+        if (this.valve == null) {
+            return;
+        }
+
         if (!this.isFrame) {
-            this.valveName.mouseClicked(p_73864_1_, p_73864_2_, p_73864_3_);
+            this.valveName.mouseClicked(mouseX, mouseY, button);
         }
     }
 
@@ -88,50 +135,63 @@ public class GuiValve extends GuiScreen {
         return false;
     }
 
-    public void drawScreen(int x, int y, float partialTicks) {
-        this.mouseX = x;
-        this.mouseY = y;
+    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+        if (this.valve == null) {
+            super.drawScreen(mouseX, mouseY, partialTicks);
+            return;
+        }
+
+        this.mouseX = mouseX;
+        this.mouseY = mouseY;
         GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
         this.mc.renderEngine.bindTexture(tex);
         this.drawTexturedModalRect(this.left, this.top, 0, 0, this.xSize, this.ySize);
-        String fluid = "Empty";
-        if (this.valve.getFluid() != null) {
-            fluid = this.valve.getFluid()
-                .getLocalizedName();
+
+        FluidStack fluid = this.valve.getFluid();
+        int capacity = this.valve.getCapacity();
+        int amount = fluid == null ? 0 : fluid.amount;
+        String fluidName = fluid == null ? translate("gui.ffs.empty") : fluid.getLocalizedName();
+        String title = this.isFrame ? translate("gui.ffs.frame") : translate("gui.ffs.tank", fluidName);
+        this.drawCenteredString(this.fontRendererObj, title, this.left + 163, this.top + 6, 16777215);
+
+        if (fluid != null && capacity > 0) {
+            this.drawFluid(this.left, this.top, amount, capacity, fluid);
         }
 
-        this.drawCenteredString(this.fontRendererObj, fluid + " Tank", this.left + 163, this.top + 6, 16777215);
-        if (this.valve.getFluid() != null) {
-            this.drawFluid(this.left, this.top);
-        }
-
-        super.drawScreen(x, y, partialTicks);
+        super.drawScreen(mouseX, mouseY, partialTicks);
         if (!this.isFrame) {
-            this.drawValveName(x, y);
+            this.drawValveName();
         }
 
-        if (this.valve.getFluid() != null) {
-            this.fluidHoveringText(fluid);
+        if (fluid != null) {
+            this.fluidHoveringText(fluidName, fluid, amount, capacity);
         }
     }
 
-    private void drawValveName(int x, int y) {
-        this.drawString(this.fontRendererObj, "Valve Name:", this.left + 80, this.top + 88, 16777215);
+    private void drawValveName() {
+        this.drawString(this.fontRendererObj, translate("gui.ffs.valve_name"), this.left + 80, this.top + 88, 16777215);
         this.valveName.drawTextBox();
     }
 
-    private void fluidHoveringText(String fluid) {
+    private void fluidHoveringText(String fluidName, FluidStack fluid, int amount, int capacity) {
         if (this.mouseX >= this.left + 10 && this.mouseX < this.left + 10 + 64
             && this.mouseY >= this.top + 10
             && this.mouseY < this.top + 10 + 101) {
             List<String> texts = new ArrayList<>();
-            texts.add(fluid);
+            texts.add(fluidName);
             texts.add(
-                "§" + EnumChatFormatting.GRAY.getFormattingCode()
-                    + GenericUtil.intToFancyNumber(this.valve.getFluidAmount())
+                EnumChatFormatting.GRAY.toString() + GenericUtil.intToFancyNumber(amount)
                     + " / "
-                    + GenericUtil.intToFancyNumber(this.valve.getCapacity())
+                    + GenericUtil.intToFancyNumber(capacity)
                     + " mB");
+            if (fluid.getFluid() != null) {
+                texts.add(
+                    EnumChatFormatting.GRAY.toString() + translate(
+                        "gui.ffs.temperature",
+                        fluid.getFluid()
+                            .getTemperature(fluid)));
+            }
+
             GL11.glPushMatrix();
             GL11.glPushAttrib(64);
             this.drawHoveringText(texts, this.mouseX, this.mouseY, this.fontRendererObj);
@@ -140,40 +200,61 @@ public class GuiValve extends GuiScreen {
         }
     }
 
-    public void actionPerformed(GuiButton btn) {
-        if (btn.id == 23442 && btn instanceof GuiToggle) {
-            GuiToggle toggle = (GuiToggle) btn;
-            this.valve.setAutoOutput(toggle.getState());
-            NetworkHandler
-                .sendPacketToServer(new FFSPacket.Server.UpdateAutoOutput(this.valve, this.valve.getAutoOutput()));
+    public void actionPerformed(GuiButton button) {
+        if (this.valve == null) {
+            return;
         }
+
+        if (button.id == SAVE_BTN_ID) {
+            this.saveValveName();
+            return;
+        }
+
+        if (button.id != AUTO_FLUID_OUTPUT_BTN_ID || !(button instanceof GuiToggle)) {
+            return;
+        }
+
+        GuiToggle toggle = (GuiToggle) button;
+        this.valve.setAutoOutput(toggle.getState());
+        NetworkHandler
+            .sendPacketToServer(new FFSPacket.Server.UpdateAutoOutput(this.valve, this.valve.getAutoOutput()));
     }
 
-    private void drawFluid(int x, int y) {
-        IIcon fluidIcon = FluidHelper.getFluidTexture(
-            this.valve.getFluid()
-                .getFluid(),
-            false);
-        if (fluidIcon != null) {
-            this.mc.getTextureManager()
-                .bindTexture(FluidHelper.BLOCK_TEXTURE);
-            int height = (int) Math.ceil((float) this.valve.getFluidAmount() / this.valve.getCapacity() * 101.0F);
-            ScaledResolution r = new ScaledResolution(this.mc, this.mc.displayWidth, this.mc.displayHeight);
-            int sc = r.getScaleFactor();
-            GL11.glScissor(
-                (x + 10) * sc,
-                (y + 10 - this.mc.gameSettings.guiScale) * sc - sc,
-                64 * sc,
-                (height + this.mc.gameSettings.guiScale + 1) * sc + sc % 2 - 1);
-            GL11.glEnable(3089);
-
-            for (int iX = 0; iX < 4; iX++) {
-                for (int iY = 7; iY > 0; iY--) {
-                    this.drawTexturedModelRectFromIcon(x + 10 + iX * 16, y - 1 + (iY - 1) * 16, fluidIcon, 16, 16);
-                }
-            }
-
-            GL11.glDisable(3089);
+    private void drawFluid(int x, int y, int amount, int capacity, FluidStack fluid) {
+        if (capacity <= 0 || fluid == null) {
+            return;
         }
+
+        IIcon fluidIcon = FluidHelper.getFluidTexture(fluid.getFluid(), false);
+        if (fluidIcon == null) {
+            return;
+        }
+
+        this.mc.getTextureManager()
+            .bindTexture(FluidHelper.BLOCK_TEXTURE);
+        int height = (int) Math.ceil((float) amount / capacity * 101.0F);
+        height = Math.max(0, Math.min(101, height));
+        if (height == 0) {
+            return;
+        }
+
+        ScaledResolution resolution = new ScaledResolution(this.mc, this.mc.displayWidth, this.mc.displayHeight);
+        int scale = resolution.getScaleFactor();
+        int fluidTop = y + 10 + 101 - height;
+        int[] scissor = GuiScissor.scissorFor(x + 10, fluidTop, 64, height, scale, this.mc.displayHeight);
+        GL11.glEnable(GL11.GL_SCISSOR_TEST);
+        GL11.glScissor(scissor[0], scissor[1], scissor[2], scissor[3]);
+
+        for (int iX = 0; iX < 4; iX++) {
+            for (int iY = 7; iY > 0; iY--) {
+                this.drawTexturedModelRectFromIcon(x + 10 + iX * 16, y - 1 + (iY - 1) * 16, fluidIcon, 16, 16);
+            }
+        }
+
+        GL11.glDisable(GL11.GL_SCISSOR_TEST);
+    }
+
+    private static String translate(String key, Object... args) {
+        return StatCollector.translateToLocalFormatted(key, args);
     }
 }

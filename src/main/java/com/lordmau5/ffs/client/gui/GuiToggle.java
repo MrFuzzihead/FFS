@@ -8,9 +8,12 @@ import net.minecraft.util.ResourceLocation;
 
 import org.lwjgl.opengl.GL11;
 
+import com.lordmau5.ffs.util.ModNames;
+
 public class GuiToggle extends GuiButton {
 
-    protected static final ResourceLocation toggleTexture = new ResourceLocation("FFS:textures/gui/gui_tank.png");
+    protected static final ResourceLocation toggleTexture = new ResourceLocation(
+        ModNames.resource("textures/gui/gui_tank.png"));
     protected boolean state = false;
     protected int textColor = 16777215;
 

@@ -21,8 +21,9 @@ public class RiMEventHandler {
             if (valve.isMaster()) {
                 valve.initiated = true;
                 valve.initialWaitTick = 0;
-                valve.calculateInside();
-                valve.updateCornerFrames();
+                if (valve.calculateInside()) {
+                    valve.updateCornerFrames();
+                }
             }
         } else if (tile instanceof TileEntityTankFrame) {
             TileEntityTankFrame frame = (TileEntityTankFrame) tile;
@@ -47,7 +48,7 @@ public class RiMEventHandler {
             TileEntityValve valve = (TileEntityValve) tile;
             if (valve.isMaster()) {
                 ForgeDirection rot = valve.getInside()
-                    .getRotation(event.axis.getRotation(event.axis));
+                    .getRotation(event.axis);
                 valve.setInside(rot);
             }
         } else if (tile instanceof TileEntityTankFrame) {

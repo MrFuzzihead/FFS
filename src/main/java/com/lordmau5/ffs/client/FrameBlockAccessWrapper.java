@@ -22,12 +22,7 @@ public class FrameBlockAccessWrapper extends IBlockAccessHandler {
         TileEntity tile = this.getTileEntity(x, y, z);
         if (tile instanceof TileEntityTankFrame) {
             TileEntityTankFrame frame = (TileEntityTankFrame) tile;
-            if (frame.getBlock() == null) {
-                return block;
-            }
-
-            Block fac = frame.getBlock()
-                .getBlock();
+            Block fac = frame.getStoredBlock();
             if (fac != null) {
                 block = fac;
             }
@@ -48,7 +43,7 @@ public class FrameBlockAccessWrapper extends IBlockAccessHandler {
         if (tile instanceof TileEntityTankFrame) {
             TileEntityTankFrame frame = (TileEntityTankFrame) tile;
             ExtendedBlock exBlock = frame.getBlock();
-            if (exBlock.getBlock() != null) {
+            if (exBlock != null && exBlock.getBlock() != null) {
                 return exBlock.getMetadata();
             }
         }

@@ -34,13 +34,27 @@
  * For more details, see https://docs.gradle.org/8.0.1/userguide/java_library_plugin.html#sec:java_library_configurations_graph
  */
 dependencies {
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.7.69-GTNH:dev")
-    implementation("com.github.GTNewHorizons:Chisel:2.17.20-GTNH:dev")
-    implementation("com.github.GTNewHorizons:BuildCraft:7.1.57:dev")
-    implementation("com.github.MrFuzzihead:Computercraft-Legacy:2.3.3:dev")
-    implementation("com.github.MrFuzzihead:Funkylocomotion:1.0.2:dev")
-    implementation("com.github.GTNewHorizons:waila:1.9.15:dev")
-    implementation("com.github.GTNewHorizons:OpenComputers:1.12.35-GTNH:dev")
-    implementation(rfg.deobf("curse.maven:RemainInMotion-228462:2281430"))
+
+    // Optional integrations: needed to compile the @Optional paths, present in dev
+    // runs and tests, but never published as hard runtime dependencies.
+    def optionalMods = [
+        "com.github.GTNewHorizons:Chisel:2.17.20-GTNH:dev",
+        "com.github.GTNewHorizons:BuildCraft:7.1.57:dev",
+        "com.github.MrFuzzihead:Computercraft-Legacy:2.3.3:dev",
+        "com.github.MrFuzzihead:Funkylocomotion:1.0.2:dev",
+        "com.github.GTNewHorizons:waila:1.19.34:dev",
+        "com.github.GTNewHorizons:OpenComputers:1.12.35-GTNH:dev",
+        rfg.deobf("curse.maven:RemainInMotion-228462:2281430"),
+    ]
+    optionalMods.each { dep ->
+        compileOnly(dep)
+        runtimeOnlyNonPublishable(dep)
+        testImplementation(dep)
+    }
+
     runtimeOnlyNonPublishable("curse.maven:PlanetGuyLib-225256:2259841")
 }
