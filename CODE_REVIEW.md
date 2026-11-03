@@ -36,6 +36,7 @@ The harness is:
 | 11 | Renderer crash/invisible valve: frame pass-result tracking and solid unformed-valve body with accent overlay | done |
 | 12 | Sync newly created tank-frame TEs to clients so formed tanks do not lose their shell | done |
 | 13 | Track the chunk render pass for tank frames; pass -1 during chunk rebuilds made every frame return without drawing | done |
+| 14 | Persist valve names through the FML tick bus, add a GUI Save button, and light fluid rendering by the fluid/world lightmap | done |
 
 ### Test coverage shipped with batches 9-13
 
@@ -425,6 +426,12 @@ still be a deliberate server-owner choice because frame count/memory grow with v
 - **Fixed (batch 8):** `ValveState`/`ValveNbt` own the save/load and compact client
   sync, and `AutoOutputState`/`TankAutoOutput` own the flag, sync throttle and
   neighbour push.
+- **Fixed (batch 14):** valve-name packets were queued on `ServerTaskQueue`, which was
+  registered on `MinecraftForge.EVENT_BUS`; 1.7.10 fires `ServerTickEvent` on the
+  FML bus, so the queue never drained. Register it on `FMLCommonHandler.instance().bus()`.
+  The GUI also has an explicit Save button/Enter handling, and fluid rendering now
+  supplies the lightmap brightness (including the fluid's luminosity) instead of
+  inheriting a dark/stale lightmap.
 - **Fixed (batch 10):** `LegacyMappings` handles Forge's `FMLMissingMappingsEvent` for
   worlds saved with the old uppercase `FFS` mod id. Old block and ItemBlock names are
   remapped to the current blocks at their old numeric ids, so existing tanks survive

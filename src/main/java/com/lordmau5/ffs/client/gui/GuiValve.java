@@ -26,6 +26,7 @@ public class GuiValve extends GuiScreen {
 
     protected static final ResourceLocation tex = new ResourceLocation(ModNames.resource("textures/gui/gui_tank.png"));
     protected static final int AUTO_FLUID_OUTPUT_BTN_ID = 23442;
+    protected static final int SAVE_BTN_ID = 23443;
     TileEntityValve valve;
     boolean isFrame;
     GuiTextField valveName;
@@ -62,20 +63,31 @@ public class GuiValve extends GuiScreen {
             this.valveName = new GuiTextField(this.fontRendererObj, this.left + 80, this.top + 100, 120, 10);
             this.valveName.setText(this.originalValveName);
             this.valveName.setMaxStringLength(18);
+            this.buttonList
+                .add(new GuiButton(SAVE_BTN_ID, this.left + 204, this.top + 97, 44, 16, translate("gui.ffs.save")));
         }
     }
 
     public void onGuiClosed() {
         super.onGuiClosed();
-        if (this.valve == null || this.isFrame) {
+        this.saveValveName();
+    }
+
+    private void saveValveName() {
+        if (this.valve == null || this.isFrame || this.valveName == null) {
             return;
         }
 
         String name = this.valveName.getText()
             .trim();
-        if (!name.isEmpty() && !name.equals(this.originalValveName)) {
-            NetworkHandler.sendPacketToServer(new FFSPacket.Server.UpdateValveName(this.valve, name));
+        if (name.isEmpty() || name.equals(this.originalValveName)) {
+            return;
         }
+
+        this.valveName.setText(name);
+        this.valve.setValveName(name);
+        this.originalValveName = name;
+        NetworkHandler.sendPacketToServer(new FFSPacket.Server.UpdateValveName(this.valve, name));
     }
 
     protected void keyTyped(char keyChar, int keyCode) {
@@ -91,6 +103,10 @@ public class GuiValve extends GuiScreen {
         }
 
         if (!this.isFrame && this.valveName.isFocused()) {
+            if (keyCode == 28) {
+                this.saveValveName();
+                return;
+            }
             this.valveName.textboxKeyTyped(keyChar, keyCode);
             return;
         }
@@ -185,7 +201,16 @@ public class GuiValve extends GuiScreen {
     }
 
     public void actionPerformed(GuiButton button) {
-        if (this.valve == null || button.id != AUTO_FLUID_OUTPUT_BTN_ID || !(button instanceof GuiToggle)) {
+        if (this.valve == null) {
+            return;
+        }
+
+        if (button.id == SAVE_BTN_ID) {
+            this.saveValveName();
+            return;
+        }
+
+        if (button.id != AUTO_FLUID_OUTPUT_BTN_ID || !(button instanceof GuiToggle)) {
             return;
         }
 

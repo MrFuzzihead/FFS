@@ -181,13 +181,15 @@ the implementation. Work is organised in review-driven batches (see
   fluid renderer draws the bottom once; the tank-frame wrapper is reused;
   precipitation height is cached; and burn/leak use the world RNG
 - Networking: packets are marshalled onto the server thread and validate reach and
-  valve-name length
+  valve-name length; the queue is registered on the FML tick bus so it actually drains
 - Renderer/GUI: correct six-face inventory model and single-pass valve rendering with
   an inside-face accent; unformed valves keep a solid body plus accent overlay; the
   frame renderer reports the actual pass result (fixes the empty-Tessellator crash);
   newly formed frame TEs are synced to clients so tanks do not lose their shell;
   the frame renderer records the chunk pass instead of reading Forge's stale -1;
-  no global render-pass mutation; GL state fully restored;
+  fluid rendering supplies the world/fluid lightmap brightness; the GUI has an
+  explicit valve-name Save button and Enter-to-save; no global render-pass mutation;
+  GL state fully restored;
   gas volumes use the same partial-column math as liquids; the GUI scissor is
   Y-flipped and bottom-aligned; the valve no longer leaks light; and slave render
   bounds are small

@@ -95,6 +95,14 @@ public class ValveRenderer extends TileEntitySpecialRenderer implements ISimpleB
                         (float) bottomDiag.getY() - tile.yCoord + 1.0F,
                         bottomDiag.getZ() - tile.zCoord);
                     t.startDrawingQuads();
+                    int light = tile.getWorldObj()
+                        .getLightBrightnessForSkyBlocks(
+                            bottomDiag.getX(),
+                            bottomDiag.getY() + 1,
+                            bottomDiag.getZ(),
+                            fluid.getFluid()
+                                .getLuminosity(fluid));
+                    t.setBrightness(light);
                     int visibleLayers = FluidRenderMath.visibleLayers(pureRenderHeight);
 
                     for (int rY = 0; rY < visibleLayers; rY++) {

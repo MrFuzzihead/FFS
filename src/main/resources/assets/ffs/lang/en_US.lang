@@ -3,6 +3,7 @@ tile.blockTankFrame.name=Tank Frame
 
 gui.ffs.auto_output=Auto fluid output
 gui.ffs.valve_name=Valve Name:
+gui.ffs.save=Save
 gui.ffs.empty=Empty
 gui.ffs.tank=%s Tank
 gui.ffs.frame=Tank Frame
