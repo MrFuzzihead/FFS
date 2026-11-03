@@ -257,7 +257,8 @@ Fixed in batch 15: formed valves had the same problem on the inside face — the
 green master/slave accent replaced the solid body. The body is now always drawn
 first; the green inside-face accent is overlaid. One accent face is intentional
 (it marks the tank interior); the exterior remains the plain gray valve body.
-The GUI Save button was also moved inward so it no longer clips the frame.
+The GUI Save button was also narrowed/repositioned and given the standard 20px
+button height so it neither clips the frame nor overlaps the name field.
 
 Fixed in batch 12: newly created `TileEntityTankFrame`s were initialized only on
 the server, so clients had no stored block and the shell rendered as nothing after

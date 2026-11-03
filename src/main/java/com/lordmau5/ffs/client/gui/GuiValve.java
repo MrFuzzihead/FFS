@@ -60,11 +60,11 @@ public class GuiValve extends GuiScreen {
                     this.valve.getAutoOutput(),
                     16777215));
             this.originalValveName = this.valve.getValveName();
-            this.valveName = new GuiTextField(this.fontRendererObj, this.left + 80, this.top + 100, 120, 10);
+            this.valveName = new GuiTextField(this.fontRendererObj, this.left + 80, this.top + 100, 112, 10);
             this.valveName.setText(this.originalValveName);
             this.valveName.setMaxStringLength(18);
             this.buttonList
-                .add(new GuiButton(SAVE_BTN_ID, this.left + 198, this.top + 97, 42, 16, translate("gui.ffs.save")));
+                .add(new GuiButton(SAVE_BTN_ID, this.left + 198, this.top + 96, 44, 20, translate("gui.ffs.save")));
         }
     }
 
