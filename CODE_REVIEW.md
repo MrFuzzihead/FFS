@@ -35,10 +35,11 @@ The harness is:
 | 10 | Legacy world migration: map old `FFS:blockValve`/`FFS:blockTankFrame` block and ItemBlock names to `ffs:*` | done |
 | 11 | Renderer crash/invisible valve: frame pass-result tracking and solid unformed-valve body with accent overlay | done |
 | 12 | Sync newly created tank-frame TEs to clients so formed tanks do not lose their shell | done |
+| 13 | Track the chunk render pass for tank frames; pass -1 during chunk rebuilds made every frame return without drawing | done |
 
-### Test coverage shipped with batches 9-12
+### Test coverage shipped with batches 9-13
 
-`./gradlew headlessTest` now runs 109 JUnit 5 tests. Batch 12 added frame initialization coverage. Batch 11 added `TankFrameRendererTest` (2) for the solid/transparent render-pass rules. Batch 10 added `LegacyMappingsTest` (5) for the old-uppercase block/item name migration. Batch 9 added:
+`./gradlew headlessTest` now runs 110 JUnit 5 tests. Batch 13 added render-pass tracking coverage. Batch 12 added frame initialization coverage. Batch 11 added `TankFrameRendererTest` (2) for the solid/transparent render-pass rules. Batch 10 added `LegacyMappingsTest` (5) for the old-uppercase block/item name migration. Batch 9 added:
 
 - `TankOwnershipTest` (3) - master flag/link lifecycle, valve lists, name filtering.
 - `ValveCommandAdapterTest` (4) - read-only commands, auto-output by name, invalid
@@ -254,6 +255,8 @@ Fixed in batch 12: newly created `TileEntityTankFrame`s were initialized only on
 the server, so clients had no stored block and the shell rendered as nothing after
 formation. `initialize()` now marks the frame for an S35 description-packet sync;
 the renderer also draws a stone fallback in pass 0 if the TE has not arrived yet.
+`BlockTankFrame.canRenderInPass` now records the pass because Forge reports `-1`
+while chunks are rebuilt; without that, every frame returned before drawing.
 
 ---
 

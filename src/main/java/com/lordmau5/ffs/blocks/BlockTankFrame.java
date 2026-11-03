@@ -131,8 +131,10 @@ public class BlockTankFrame extends Block implements IFacade {
     }
 
     public boolean canRenderInPass(int pass) {
-        // The stored block decides its own pass inside the renderer. Do not mutate
-        // Forge's global render-pass state here; EntityRenderer already sets it.
+        // The stored block decides its own pass inside the renderer. The chunk
+        // builder calls this for every pass, but does not give renderWorldBlock
+        // the pass number, so hand it to the renderer explicitly.
+        TankFrameRenderer.setPass(pass);
         return true;
     }
 

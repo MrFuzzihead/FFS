@@ -1,5 +1,6 @@
 package com.lordmau5.ffs.client;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -10,6 +11,19 @@ import org.junit.jupiter.api.Test;
 import com.lordmau5.ffs.test.TestBlock;
 
 class TankFrameRendererTest {
+
+    @Test
+    void tracksThePassSuppliedByTheChunkBuilder() {
+        try {
+            TankFrameRenderer.setPass(0);
+            assertEquals(0, TankFrameRenderer.getPassForFrameRender());
+
+            TankFrameRenderer.setPass(1);
+            assertEquals(1, TankFrameRenderer.getPassForFrameRender());
+        } finally {
+            TankFrameRenderer.setPass(-1);
+        }
+    }
 
     @Test
     void opaqueFramesOnlyRenderInTheSolidPass() {

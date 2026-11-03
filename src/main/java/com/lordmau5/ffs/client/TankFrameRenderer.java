@@ -25,11 +25,22 @@ public class TankFrameRenderer implements ISimpleBlockRenderingHandler {
     private final Set<Block> failedBlocks = new HashSet<>();
     private FrameBlockAccessWrapper wrapper;
     private IBlockAccess wrapperBase;
+    private static int currentPass = -1;
 
     public void renderInventoryBlock(Block block, int metadata, int modelId, RenderBlocks renderer) {}
 
+    /**
+     * The chunk renderer does not pass the pass number into
+     * {@link ISimpleBlockRenderingHandler#renderWorldBlock}. Forge's global pass is
+     * still -1 while chunks are rebuilt, so track the pass supplied by
+     * {@link BlockTankFrame#canRenderInPass(int)}.
+     */
+    public static void setPass(int pass) {
+        currentPass = pass;
+    }
+
     public static int getPassForFrameRender() {
-        return MinecraftForgeClient.getRenderPass();
+        return currentPass >= 0 ? currentPass : MinecraftForgeClient.getRenderPass();
     }
 
     static boolean shouldRenderInPass(Block renderBlock, boolean opaque, int pass) {
